@@ -51,11 +51,13 @@ export const PIECE_LABELS = Object.freeze({
   [PieceType.PAWN]: 'P',
 });
 
-export const CELL_SIZE = 80;
-export const BOARD_OFFSET_X = 80;
-export const BOARD_OFFSET_Y = 80;
-export const GAME_WIDTH = 800;
-export const GAME_HEIGHT = 600;
+export const LAYOUT = Object.freeze({
+  CELL_SIZE: 80,
+  BOARD_OFFSET_X: 80,
+  BOARD_OFFSET_Y: 80,
+  GAME_WIDTH: 800,
+  GAME_HEIGHT: 600,
+});
 
 export const COLORS = Object.freeze({
   BOARD_LIGHT: 0xf0d9b5,
@@ -71,4 +73,17 @@ export const COLORS = Object.freeze({
   TEXT_MUTED: 0x888888,
   BUTTON_BG: 0x2a2a5a,
   BUTTON_HOVER: 0x3a3a8a,
+});
+
+// CSS string versions for use with Phaser text objects (add.text style)
+export const TEXT_COLORS = Object.freeze({
+  PLAYER_PIECE: '#4a90d9',
+  AI_PIECE: '#e74c3c',
+  KING_PLAYER: '#2ecc71',
+  KING_AI: '#ff6b35',
+  PRIMARY: '#ffffff',
+  MUTED: '#888888',
+  MANA: '#00ccff',
+  TIMER: '#ffdd00',
+  TIMER_LOW: '#ff4444',
 });
