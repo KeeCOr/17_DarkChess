@@ -1,5 +1,5 @@
 import { Piece } from './Piece.js';
-import { BOARD_SIZE, MAX_MANA, Owner } from '../config.js';
+import { BOARD_SIZE, MAX_MANA, Owner, PieceType } from '../config.js';
 
 export class Board {
   constructor() {
@@ -33,7 +33,7 @@ export class Board {
     for (let r = 0; r < BOARD_SIZE; r++)
       for (let c = 0; c < BOARD_SIZE; c++) {
         const p = this.grid[r][c];
-        if (p && p.type === 'KING' && p.owner === owner) return { row: r, col: c };
+        if (p && p.type === PieceType.KING && p.owner === owner) return { row: r, col: c };
       }
     return null;
   }

@@ -21,6 +21,7 @@ export class AIController {
       case Difficulty.EASY:   return this._easyAction(board);
       case Difficulty.MEDIUM: return this._mediumAction(board);
       case Difficulty.HARD:   return this._hardAction(board);
+      default: return { type: 'pass' };
     }
   }
 

@@ -18,7 +18,7 @@ export class SummonSystem {
 
   canSummon(board, owner, pieceType) {
     const cost = SUMMON_COSTS[pieceType];
-    if (!cost || board.mana[owner] < cost) return false;
+    if (cost === undefined || board.mana[owner] < cost) return false;
     return this.getSummonableSquares(board, owner).length > 0;
   }
 
