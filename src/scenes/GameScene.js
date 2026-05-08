@@ -241,7 +241,7 @@ export class GameScene extends Phaser.Scene {
     if (this.turnTimer) this.turnTimer.remove();
     this.time.delayedCall(800, () => {
       this.scene.stop('UI');
-      this.scene.start('Result', { winner });
+      this.scene.start('Result', { winner, difficulty: this.difficulty });
     });
   }
 

@@ -4,7 +4,10 @@ import { LAYOUT, COLORS, TEXT_COLORS, Owner } from '../config.js';
 export class ResultScene extends Phaser.Scene {
   constructor() { super('Result'); }
 
-  init(data) { this.winner = data.winner; }
+  init(data) {
+    this.winner = data.winner;
+    this.difficulty = data.difficulty;
+  }
 
   create() {
     const cx = LAYOUT.GAME_WIDTH / 2;
@@ -21,8 +24,7 @@ export class ResultScene extends Phaser.Scene {
     replayBtn.on('pointerover', () => replayBtn.setFillStyle(COLORS.BUTTON_HOVER));
     replayBtn.on('pointerout', () => replayBtn.setFillStyle(COLORS.BUTTON_BG));
     replayBtn.on('pointerdown', () => {
-      this.scene.stop('UI');
-      this.scene.start('Menu');
+      this.scene.start('Placement', { difficulty: this.difficulty });
     });
 
     const menuBtn = this.add.rectangle(cx, 390, 200, 52, COLORS.BUTTON_BG).setInteractive();
