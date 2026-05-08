@@ -66,4 +66,11 @@ export class UIScene extends Phaser.Scene {
       txt.setColor(affordable ? TEXT_COLORS.PRIMARY : TEXT_COLORS.MUTED);
     }
   }
+
+  shutdown() {
+    if (this.gameScene) {
+      this.gameScene.events.off('turn-start', this._onTurnStart, this);
+      this.gameScene.events.off('timer-tick', this._onTimerTick, this);
+    }
+  }
 }

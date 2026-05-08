@@ -173,12 +173,7 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft = TURN_TIME_LIMIT;
 
     if (this.turnTimer) this.turnTimer.remove();
-    this.turnTimer = this.time.addEvent({
-      delay: 1000,
-      callback: this._tickTimer,
-      callbackScope: this,
-      loop: true,
-    });
+    this.turnTimer = null;
 
     this.events.emit('turn-start', {
       turn: owner,
@@ -190,6 +185,12 @@ export class GameScene extends Phaser.Scene {
       this.state = State.AI_TURN;
       this.time.delayedCall(AI_THINK_DELAY, this._doAITurn, [], this);
     } else {
+      this.turnTimer = this.time.addEvent({
+        delay: 1000,
+        callback: this._tickTimer,
+        callbackScope: this,
+        loop: true,
+      });
       this.state = State.WAITING;
       this._showThreatsIfInCheck();
     }
