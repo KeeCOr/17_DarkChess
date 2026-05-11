@@ -7,7 +7,7 @@ import { SummonSystem } from '../game/SummonSystem.js';
 import { AIController } from '../game/AIController.js';
 import {
   PieceType, Owner, COLORS, LAYOUT, MANA_PER_TURN, TURN_TIME_LIMIT,
-  AI_THINK_DELAY, PIECE_LABELS, TEXT_COLORS,
+  AI_THINK_DELAY, PIECE_LABELS, TEXT_COLORS, BOARD_SIZE,
 } from '../config.js';
 
 const State = {
@@ -39,10 +39,13 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft = TURN_TIME_LIMIT;
     this.pendingSummonType = null;
     this.turnTimer = null;
+    this.hasMoved = false;
+    this.hasSummoned = false;
+    this.fogGraphics = [];
 
     this._setupBoard();
     this._drawBoard();
-    this._renderAllPieces();
+    this._refreshBoard();
     this.scene.launch('UI');
     this._startTurn(Owner.PLAYER);
   }
@@ -71,13 +74,54 @@ export class GameScene extends Phaser.Scene {
       }
   }
 
+  _refreshBoard() {
+    this._renderAllPieces();
+    this._renderFog();
+  }
+
   _renderAllPieces() {
     Object.values(this.pieceObjects).forEach(o => o.destroy());
     this.pieceObjects = {};
-    for (let r = 0; r < 5; r++)
-      for (let c = 0; c < 5; c++) {
+    const visible = this._getVisibleCells();
+    for (let r = 0; r < BOARD_SIZE; r++)
+      for (let c = 0; c < BOARD_SIZE; c++) {
         const piece = this.board.getPiece(r, c);
-        if (piece) this._renderPiece(r, c, piece);
+        if (piece && (piece.owner === Owner.PLAYER || visible.has(`${r},${c}`)))
+          this._renderPiece(r, c, piece);
+      }
+  }
+
+  _getVisibleCells() {
+    const visible = new Set();
+    for (let r = 0; r < BOARD_SIZE; r++)
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const piece = this.board.getPiece(r, c);
+        if (piece && piece.owner === Owner.PLAYER)
+          for (let dr = -2; dr <= 2; dr++)
+            for (let dc = -2; dc <= 2; dc++) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE)
+                visible.add(`${nr},${nc}`);
+            }
+      }
+    return visible;
+  }
+
+  _renderFog() {
+    this.fogGraphics.forEach(g => g.destroy());
+    this.fogGraphics = [];
+    const visible = this._getVisibleCells();
+    for (let r = 0; r < BOARD_SIZE; r++)
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        if (!visible.has(`${r},${c}`)) {
+          const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE;
+          const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE;
+          const g = this.add.graphics();
+          g.fillStyle(0x000000, 0.65);
+          g.fillRect(x, y, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+          g.setDepth(2);
+          this.fogGraphics.push(g);
+        }
       }
   }
 
@@ -90,7 +134,7 @@ export class GameScene extends Phaser.Scene {
       : (piece.owner === Owner.PLAYER ? TEXT_COLORS.PLAYER_PIECE : TEXT_COLORS.AI_PIECE);
     const obj = this.add.text(x, y, PIECE_LABELS[piece.type], {
       fontSize: isKing ? '30px' : '26px', color, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(1);
+    }).setOrigin(0.5).setDepth(4);
     this.pieceObjects[`${r},${c}`] = obj;
   }
 
@@ -106,7 +150,7 @@ export class GameScene extends Phaser.Scene {
       const g = this.add.graphics();
       g.fillStyle(color, alpha);
       g.fillRect(x, y, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
-      g.setDepth(0.5);
+      g.setDepth(3);
       this.highlightGraphics.push(g);
     }
   }
@@ -118,11 +162,17 @@ export class GameScene extends Phaser.Scene {
       const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
       if (squares.some(s => s.row === r && s.col === c)) {
         this.summonSys.summon(this.board, Owner.PLAYER, this.pendingSummonType, r, c);
-        this._renderAllPieces();
+        this.hasSummoned = true;
+        this._refreshBoard();
         this._clearHighlights();
         this.state = State.WAITING;
         this.pendingSummonType = null;
-        this._endTurn();
+        this._checkGameOver();
+        if (this.state === State.GAME_OVER) return;
+        if (this.hasMoved) { this._endTurn(); return; }
+        this._showMovablePieces();
+        this._showThreatsIfInCheck();
+        this.events.emit('player-action', { hasSummoned: this.hasSummoned, mana: this.board.mana[Owner.PLAYER] });
         return;
       }
       this._clearHighlights();
@@ -132,20 +182,37 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.state === State.SELECTED) {
+      // Same cell clicked — deselect
+      if (this.selectedCell.row === r && this.selectedCell.col === c) {
+        this._clearHighlights();
+        this.state = State.WAITING;
+        this.selectedCell = null;
+        this._showMovablePieces();
+        this._showThreatsIfInCheck();
+        return;
+      }
       const moves = this.calc.getMoves(this.board, this.selectedCell.row, this.selectedCell.col);
       if (moves.some(m => m.row === r && m.col === c)) {
         this.board.movePiece(this.selectedCell.row, this.selectedCell.col, r, c);
-        this._renderAllPieces();
+        this.hasMoved = true;
+        this._checkPromotion();
+        this._refreshBoard();
         this._clearHighlights();
         this.state = State.WAITING;
         this.selectedCell = null;
         this._checkGameOver();
-        if (this.state !== State.GAME_OVER) this._endTurn();
+        if (this.state === State.GAME_OVER) return;
+        if (this.hasSummoned) { this._endTurn(); return; }
+        this._showMovablePieces();
+        this._showThreatsIfInCheck();
+        this.events.emit('player-action', { hasSummoned: this.hasSummoned, mana: this.board.mana[Owner.PLAYER] });
         return;
       }
       this._clearHighlights();
       this.state = State.WAITING;
       this.selectedCell = null;
+      this._showMovablePieces();
+      this._showThreatsIfInCheck();
     }
 
     const piece = this.board.getPiece(r, c);
@@ -160,10 +227,26 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _showMovablePieces() {
+    const movable = [];
+    for (let r = 0; r < BOARD_SIZE; r++)
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const piece = this.board.getPiece(r, c);
+        if (piece && piece.owner === Owner.PLAYER) {
+          const moves = this.calc.getMoves(this.board, r, c);
+          if (moves.length > 0) movable.push({ row: r, col: c });
+        }
+      }
+    this._highlightCells(movable, COLORS.MOVABLE_PIECE, 0.35);
+  }
+
   _showThreatsIfInCheck() {
     if (this.detector.isInCheck(this.board, Owner.PLAYER)) {
       const threats = this.detector.getThreats(this.board, Owner.PLAYER);
       this._highlightCells(threats, COLORS.THREAT, 0.7);
+      this.events.emit('check', true);
+    } else {
+      this.events.emit('check', false);
     }
   }
 
@@ -171,6 +254,8 @@ export class GameScene extends Phaser.Scene {
     this.board.addMana(owner, MANA_PER_TURN);
     this.board.currentTurn = owner;
     this.timeLeft = TURN_TIME_LIMIT;
+    this.hasMoved = false;
+    this.hasSummoned = false;
 
     if (this.turnTimer) this.turnTimer.remove();
     this.turnTimer = null;
@@ -192,6 +277,7 @@ export class GameScene extends Phaser.Scene {
         loop: true,
       });
       this.state = State.WAITING;
+      this._showMovablePieces();
       this._showThreatsIfInCheck();
     }
   }
@@ -214,13 +300,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   _doAITurn() {
-    const action = this.ai.getAction(this.board);
-    if (action.type === 'move') {
-      this.board.movePiece(action.from.row, action.from.col, action.to.row, action.to.col);
-    } else if (action.type === 'summon') {
-      this.summonSys.summon(this.board, Owner.AI, action.pieceType, action.to.row, action.to.col);
+    const moveAction = this.ai.getMove(this.board);
+    if (moveAction) {
+      this.board.movePiece(moveAction.from.row, moveAction.from.col, moveAction.to.row, moveAction.to.col);
     }
-    this._renderAllPieces();
+    const summonAction = this.ai.getSummon(this.board);
+    if (summonAction) {
+      this.summonSys.summon(this.board, Owner.AI, summonAction.pieceType, summonAction.to.row, summonAction.to.col);
+    }
+    this._checkPromotion();
+    this._refreshBoard();
     this._checkGameOver();
     if (this.state !== State.GAME_OVER) this._endTurn();
   }
@@ -248,12 +337,28 @@ export class GameScene extends Phaser.Scene {
 
   startSummonMode(pieceType) {
     if (this.state !== State.WAITING) return;
+    if (this.hasSummoned) return;
     if (!this.summonSys.canSummon(this.board, Owner.PLAYER, pieceType)) return;
     this.pendingSummonType = pieceType;
     this.state = State.SUMMON_MODE;
     this._clearHighlights();
     const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
     this._highlightCells(squares, COLORS.SUMMON_HIGHLIGHT);
+  }
+
+  _checkPromotion() {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const pp = this.board.getPiece(0, c);
+      if (pp?.type === PieceType.PAWN && pp.owner === Owner.PLAYER)
+        this.board.setPiece(0, c, new Piece(PieceType.QUEEN, Owner.PLAYER));
+      const ap = this.board.getPiece(4, c);
+      if (ap?.type === PieceType.PAWN && ap.owner === Owner.AI)
+        this.board.setPiece(4, c, new Piece(PieceType.QUEEN, Owner.AI));
+    }
+  }
+
+  endTurnManually() {
+    if (this.state === State.WAITING && this.board.currentTurn === Owner.PLAYER) this._endTurn();
   }
 
   getMana() { return this.board.mana; }

@@ -42,8 +42,23 @@ export class UIScene extends Phaser.Scene {
       this.summonButtons[type] = { btn, txt };
     });
 
+    this.checkText = this.add.text(PANEL_X, 490, '⚠ 체크!', {
+      fontSize: '20px', color: '#ff4444', fontStyle: 'bold',
+    }).setVisible(false);
+
+    const endBtn = this.add.rectangle(PANEL_X + 90, 545, 190, 40, 0x553333).setInteractive();
+    this.endBtnText = this.add.text(PANEL_X + 90, 545, '턴 종료', {
+      fontSize: '17px', color: TEXT_COLORS.PRIMARY,
+    }).setOrigin(0.5);
+    endBtn.on('pointerover', () => endBtn.setFillStyle(0x884444));
+    endBtn.on('pointerout', () => endBtn.setFillStyle(0x553333));
+    endBtn.on('pointerdown', () => this.gameScene.endTurnManually());
+    this.endBtn = endBtn;
+
     this.gameScene.events.on('turn-start', this._onTurnStart, this);
     this.gameScene.events.on('timer-tick', this._onTimerTick, this);
+    this.gameScene.events.on('check', this._onCheck, this);
+    this.gameScene.events.on('player-action', this._onPlayerAction, this);
   }
 
   _onTurnStart({ turn, mana, timeLeft }) {
@@ -51,7 +66,16 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setText(String(timeLeft));
     this.timerText.setColor(TEXT_COLORS.TIMER);
     this.manaText.setText(`${mana[Owner.PLAYER]} / 10`);
-    this._refreshSummonButtons(mana[Owner.PLAYER]);
+    this.checkText.setVisible(false);
+    this._refreshSummonButtons(mana[Owner.PLAYER], false);
+  }
+
+  _onCheck(inCheck) {
+    this.checkText.setVisible(inCheck);
+  }
+
+  _onPlayerAction({ hasSummoned, mana }) {
+    this._refreshSummonButtons(mana, hasSummoned);
   }
 
   _onTimerTick(timeLeft) {
@@ -59,11 +83,11 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setColor(timeLeft <= 10 ? TEXT_COLORS.TIMER_LOW : TEXT_COLORS.TIMER);
   }
 
-  _refreshSummonButtons(playerMana) {
+  _refreshSummonButtons(playerMana, hasSummoned) {
     for (const [type, { btn, txt }] of Object.entries(this.summonButtons)) {
-      const affordable = playerMana >= SUMMON_COSTS[type];
-      btn.setFillStyle(affordable ? COLORS.BUTTON_BG : 0x333333);
-      txt.setColor(affordable ? TEXT_COLORS.PRIMARY : TEXT_COLORS.MUTED);
+      const enabled = !hasSummoned && playerMana >= SUMMON_COSTS[type];
+      btn.setFillStyle(enabled ? COLORS.BUTTON_BG : 0x333333);
+      txt.setColor(enabled ? TEXT_COLORS.PRIMARY : TEXT_COLORS.MUTED);
     }
   }
 
@@ -71,6 +95,8 @@ export class UIScene extends Phaser.Scene {
     if (this.gameScene) {
       this.gameScene.events.off('turn-start', this._onTurnStart, this);
       this.gameScene.events.off('timer-tick', this._onTimerTick, this);
+      this.gameScene.events.off('check', this._onCheck, this);
+      this.gameScene.events.off('player-action', this._onPlayerAction, this);
     }
   }
 }

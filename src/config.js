@@ -66,6 +66,7 @@ export const COLORS = Object.freeze({
   AI_PIECE: 0xe74c3c,
   MOVE_HIGHLIGHT: 0x00ff88,
   SUMMON_HIGHLIGHT: 0x00cc66,
+  MOVABLE_PIECE: 0xffee88,
   SELECTED: 0xffdd00,
   THREAT: 0xff2200,
   PANEL_BG: 0x16213e,

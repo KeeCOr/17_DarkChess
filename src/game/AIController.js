@@ -25,6 +25,52 @@ export class AIController {
     }
   }
 
+  getMove(board) {
+    const allMoves = this._getAllMoves(board, Owner.AI);
+    if (allMoves.length === 0) return null;
+    switch (this.difficulty) {
+      case Difficulty.EASY:
+        return { type: 'move', ...allMoves[Math.floor(Math.random() * allMoves.length)] };
+      case Difficulty.MEDIUM: {
+        const captures = allMoves.filter(m => board.getPiece(m.to.row, m.to.col) !== null);
+        if (captures.length > 0) {
+          captures.sort((a, b) =>
+            PIECE_VALUES[board.getPiece(b.to.row, b.to.col).type] -
+            PIECE_VALUES[board.getPiece(a.to.row, a.to.col).type]);
+          return { type: 'move', ...captures[0] };
+        }
+        return { type: 'move', ...allMoves[Math.floor(Math.random() * allMoves.length)] };
+      }
+      case Difficulty.HARD: {
+        let bestScore = -Infinity;
+        let bestMove = allMoves[0];
+        for (const move of allMoves) {
+          const clone = board.clone();
+          clone.movePiece(move.from.row, move.from.col, move.to.row, move.to.col);
+          const score = this._minimax(clone, MINIMAX_DEPTH - 1, -Infinity, Infinity, false);
+          if (score > bestScore) { bestScore = score; bestMove = move; }
+        }
+        return { type: 'move', ...bestMove };
+      }
+      default: return null;
+    }
+  }
+
+  getSummon(board) {
+    const options = this._getSummonOptions(board, Owner.AI);
+    if (options.length === 0) return null;
+    switch (this.difficulty) {
+      case Difficulty.EASY:
+        return { type: 'summon', ...options[Math.floor(Math.random() * options.length)] };
+      case Difficulty.MEDIUM:
+      case Difficulty.HARD: {
+        const sorted = [...options].sort((a, b) => PIECE_VALUES[b.pieceType] - PIECE_VALUES[a.pieceType]);
+        return { type: 'summon', ...sorted[0] };
+      }
+      default: return null;
+    }
+  }
+
   // --- Easy: random move or random summon ---
   _easyAction(board) {
     const allMoves = this._getAllMoves(board, Owner.AI);

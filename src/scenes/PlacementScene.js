@@ -33,6 +33,8 @@ export class PlacementScene extends Phaser.Scene {
       fontSize: '20px', color: '#888888',
     }).setOrigin(0.5);
 
+    this._randomizePawns();
+
     this.readyBtn.on('pointerdown', () => {
       if (this.pawnCount < PAWN_COUNT) return;
       const placements = Object.keys(this.placed).map(key => {
@@ -87,6 +89,22 @@ export class PlacementScene extends Phaser.Scene {
       cell.setFillStyle(0x4a90d9);
     }
     this._updateReadyButton();
+  }
+
+  _randomizePawns() {
+    const cells = [];
+    for (let r = 3; r <= 4; r++)
+      for (let c = 0; c < 5; c++)
+        if (!(r === KING_ROW && c === KING_COL)) cells.push([r, c]);
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+    for (let i = 0; i < PAWN_COUNT; i++) {
+      const [r, c] = cells[i];
+      const { cell, x, y, isLight } = this.cellGraphics[`${r},${c}`];
+      this._togglePawn(r, c, x, y, cell, isLight);
+    }
   }
 
   _updateReadyButton() {
