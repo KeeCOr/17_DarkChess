@@ -48,6 +48,13 @@ export class GameScene extends Phaser.Scene {
 
     this._setupBoard();
     this._drawBoard();
+    const boardCX = LAYOUT.BOARD_OFFSET_X + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
+    const boardCY = LAYOUT.BOARD_OFFSET_Y + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
+    this.aiOverlay = this.add.rectangle(
+      boardCX, boardCY,
+      BOARD_SIZE * LAYOUT.CELL_SIZE, BOARD_SIZE * LAYOUT.CELL_SIZE,
+      0x000000,
+    ).setDepth(1).setAlpha(0);
     this._refreshBoard();
     this.scene.launch('UI');
     this._startTurn(Owner.PLAYER);
@@ -221,7 +228,7 @@ export class GameScene extends Phaser.Scene {
           this._refreshBoard();
           this._checkGameOver();
           if (this.state === State.GAME_OVER) return;
-          if (this.hasSummoned) { this._endTurn(); return; }
+          if (this.hasSummoned || this.timeLeft <= 0) { this._endTurn(); return; }
           this._showThreatsIfInCheck();
           this._emitPlayerAction();
         });
@@ -322,6 +329,40 @@ export class GameScene extends Phaser.Scene {
     if (this.checkRing) { this.checkRing.destroy(); this.checkRing = null; }
   }
 
+  _showTurnBanner(owner) {
+    const cx = LAYOUT.BOARD_OFFSET_X + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
+    const cy = LAYOUT.BOARD_OFFSET_Y + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
+    const isPlayer = owner === Owner.PLAYER;
+    const label = isPlayer ? '내 턴' : 'AI 턴';
+    const accentColor = isPlayer ? 0x2ecc71 : 0xff6b35;
+    const bgColor = isPlayer ? 0x071a0f : 0x1a0707;
+    const textColor = isPlayer ? '#2ecc71' : '#ff6b35';
+
+    const border = this.add.rectangle(cx, cy, 228, 78, accentColor).setDepth(10).setAlpha(0);
+    const bg = this.add.rectangle(cx, cy, 220, 70, bgColor).setDepth(10).setAlpha(0);
+    const txt = this.add.text(cx, cy, label, {
+      fontSize: '38px', color: textColor, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(11).setAlpha(0);
+
+    const targets = [border, bg, txt];
+    this.tweens.add({
+      targets,
+      alpha: 1,
+      duration: 150,
+      ease: 'Power2',
+      onComplete: () => {
+        this.time.delayedCall(550, () => {
+          this.tweens.add({
+            targets,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => { border.destroy(); bg.destroy(); txt.destroy(); },
+          });
+        });
+      },
+    });
+  }
+
   _showMovablePieces() {
     if (this.hasMoved) return;
     const movable = [];
@@ -364,9 +405,11 @@ export class GameScene extends Phaser.Scene {
     this.hasMoved = false;
     this.hasSummoned = false;
     this.summonedCells = new Set();
+    this.pendingSummonType = null;
 
-    if (this.turnTimer) this.turnTimer.remove();
-    this.turnTimer = null;
+    if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
+
+    this._showTurnBanner(owner);
 
     this.events.emit('turn-start', {
       turn: owner,
@@ -377,8 +420,10 @@ export class GameScene extends Phaser.Scene {
 
     if (owner === Owner.AI) {
       this.state = State.AI_TURN;
+      this.aiOverlay.setAlpha(0.28);
       this.time.delayedCall(AI_THINK_DELAY, this._doAITurn, [], this);
     } else {
+      this.aiOverlay.setAlpha(0);
       this.turnTimer = this.time.addEvent({
         delay: 1000,
         callback: this._tickTimer,
@@ -395,14 +440,16 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft--;
     this.events.emit('timer-tick', this.timeLeft);
     if (this.timeLeft <= 0) {
-      this.turnTimer?.remove();
-      if (this.board.currentTurn === Owner.PLAYER) this._endTurn();
+      if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
+      // 애니메이션 중이면 애니메이션 콜백이 끝난 뒤 endTurn 처리
+      if (this.board.currentTurn === Owner.PLAYER && !this.animating) this._endTurn();
     }
   }
 
   _endTurn() {
-    if (this.turnTimer) this.turnTimer.remove();
+    if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
     this._clearHighlights();
+    this.pendingSummonType = null;
     this.state = State.WAITING;
     const next = this.board.currentTurn === Owner.PLAYER ? Owner.AI : Owner.PLAYER;
     this._startTurn(next);
