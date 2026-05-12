@@ -25,21 +25,34 @@ export class AIController {
     }
   }
 
+  _safeMove(board, move) {
+    const clone = board.clone();
+    clone.movePiece(move.from.row, move.from.col, move.to.row, move.to.col);
+    return !this.detector.isInCheck(clone, Owner.AI);
+  }
+
   getMove(board) {
     const allMoves = this._getAllMoves(board, Owner.AI);
     if (allMoves.length === 0) return null;
+    const inCheck = this.detector.isInCheck(board, Owner.AI);
     switch (this.difficulty) {
-      case Difficulty.EASY:
-        return { type: 'move', ...allMoves[Math.floor(Math.random() * allMoves.length)] };
+      case Difficulty.EASY: {
+        // 체크 상황이면 체크를 벗어나는 수 우선
+        const safe = inCheck ? allMoves.filter(m => this._safeMove(board, m)) : allMoves;
+        const pool = safe.length > 0 ? safe : allMoves;
+        return { type: 'move', ...pool[Math.floor(Math.random() * pool.length)] };
+      }
       case Difficulty.MEDIUM: {
-        const captures = allMoves.filter(m => board.getPiece(m.to.row, m.to.col) !== null);
+        const safe = allMoves.filter(m => this._safeMove(board, m));
+        const pool = safe.length > 0 ? safe : allMoves;
+        const captures = pool.filter(m => board.getPiece(m.to.row, m.to.col) !== null);
         if (captures.length > 0) {
           captures.sort((a, b) =>
             PIECE_VALUES[board.getPiece(b.to.row, b.to.col).type] -
             PIECE_VALUES[board.getPiece(a.to.row, a.to.col).type]);
           return { type: 'move', ...captures[0] };
         }
-        return { type: 'move', ...allMoves[Math.floor(Math.random() * allMoves.length)] };
+        return { type: 'move', ...pool[Math.floor(Math.random() * pool.length)] };
       }
       case Difficulty.HARD: {
         let bestScore = -Infinity;

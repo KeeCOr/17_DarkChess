@@ -15,7 +15,7 @@ function createWindow() {
     },
   });
 
-  win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   win.setMenuBarVisibility(false);
 
   win.webContents.setWindowOpenHandler(({ url }) => {

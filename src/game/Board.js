@@ -6,6 +6,7 @@ export class Board {
     this.grid = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
     this.mana = { [Owner.PLAYER]: 0, [Owner.AI]: 0 };
     this.currentTurn = Owner.PLAYER;
+    this.summonCounts = { [Owner.PLAYER]: {}, [Owner.AI]: {} };
   }
 
   isInBounds(row, col) {
@@ -53,6 +54,10 @@ export class Board {
         b.grid[r][c] = this.grid[r][c] ? this.grid[r][c].clone() : null;
     b.mana = { ...this.mana };
     b.currentTurn = this.currentTurn;
+    b.summonCounts = {
+      [Owner.PLAYER]: { ...this.summonCounts[Owner.PLAYER] },
+      [Owner.AI]: { ...this.summonCounts[Owner.AI] },
+    };
     return b;
   }
 

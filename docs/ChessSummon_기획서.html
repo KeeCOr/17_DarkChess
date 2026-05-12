@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Summon — 게임 기획서</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #7c6af7;
+    --accent2: #4fc3f7;
+    --text: #e8eaf0;
+    --text-muted: #8b8fa8;
+    --success: #4caf7d;
+    --warn: #f7c948;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 40px 20px;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, #1e1640 0%, #12192e 100%);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '♟';
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 80px;
+    opacity: 0.15;
+  }
+  header h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; }
+  header .meta { color: var(--text-muted); font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
+  header .meta span { display: flex; align-items: center; gap: 6px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    margin-left: 8px;
+  }
+  .badge.done { background: var(--success); }
+  .badge.planned { background: #555; }
+  .badge.new { background: #c86af7; }
+  h2 {
+    font-size: 1.2rem;
+    color: var(--accent2);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin: 36px 0 16px;
+  }
+  h3 { font-size: 1rem; color: var(--warn); margin: 20px 0 10px; }
+  p { margin-bottom: 10px; color: var(--text); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+  .card.highlight { border-color: var(--accent); }
+  .grid { display: grid; gap: 12px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 600px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th {
+    background: #252836;
+    color: var(--accent2);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(124, 106, 247, 0.05); }
+  .piece-icon {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    text-align: center;
+    line-height: 28px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .mana-cost {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #252036;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 16px 0;
+  }
+  .flow-box {
+    background: #252836;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .flow-arrow { color: var(--accent); font-size: 18px; }
+  .board-demo {
+    font-family: monospace;
+    background: #111420;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 13px;
+    color: #b0b8d0;
+    line-height: 1.8;
+  }
+  .board-demo .ai { color: #f07070; }
+  .board-demo .player { color: #70b4f0; }
+  .ai-table tr:nth-child(1) td:first-child { color: #f07070; }
+  .ai-table tr:nth-child(2) td:first-child { color: var(--warn); }
+  .ai-table tr:nth-child(3) td:first-child { color: var(--success); }
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 6px; color: var(--text); }
+  .priority-high { color: var(--warn); font-weight: 600; }
+  .priority-mid { color: var(--accent2); }
+  .priority-low { color: var(--text-muted); }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 10px 16px;
+    background: #1e2030;
+    border-radius: 0 8px 8px 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 10px 0;
+  }
+  .eval-box {
+    background: #111420;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #b0c8e8;
+    line-height: 2;
+  }
+  .roadmap-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .roadmap-row:last-child { border-bottom: none; }
+  .step-num {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .anim-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .anim-row:last-child { border-bottom: none; }
+  .anim-icon {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #252036;
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #252036;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Chess Summon <span class="badge">v0.1.0</span></h1>
+  <p style="color:var(--text-muted);margin-top:6px;">턴제 전략 / 체스 변형 — 마나로 말을 소환하는 5×5 체스 게임</p>
+  <div class="meta">
+    <span>버전: 0.1.0</span>
+    <span>작성일: 2026-05-12</span>
+    <span>장르: 턴제 전략</span>
+  </div>
+</header>
+
+<!-- 1. 게임 개요 -->
+<h2>1. 게임 개요</h2>
+
+<div class="card highlight">
+  <h3 style="margin-top:0">핵심 콘셉트</h3>
+  <p>체스의 이동 규칙을 기반으로 하되, 매 턴 마나를 적립하여 새로운 체스말을 왕 주변에 소환할 수 있는 전략 게임.<br>
+  초반엔 소수의 폰으로 버티다가, 마나가 쌓이면 강력한 말을 소환해 전세를 역전시키는 흐름이 핵심 재미다.</p>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3 style="margin-top:0">소환 타이밍의 긴장감</h3>
+    <p>마나를 아껴 퀸을 소환할 것인가, 지금 당장 폰을 소환해 빈틈을 막을 것인가</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">왕 중심 방어선</h3>
+    <p>소환은 왕 인접에서만 가능하므로, 왕을 지키면서 공격 거점도 구축해야 함</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">제한된 보드</h3>
+    <p>5×5라는 좁은 공간에서 순식간에 판세가 뒤집힘</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">60초 턴 제한</h3>
+    <p>시간 압박이 더해져 직관적 판단이 중요</p>
+  </div>
+</div>
+
+<h3>플랫폼 로드맵</h3>
+<div class="card">
+  <div class="roadmap-row">
+    <div class="step-num">1</div>
+    <div>웹 브라우저 <span class="badge done">완료</span></div>
+  </div>
+  <div class="roadmap-row">
+    <div class="step-num">2</div>
+    <div>Windows 데스크탑 (Electron .exe) <span class="badge done">완료</span></div>
+  </div>
+  <div class="roadmap-row">
+    <div class="step-num">3</div>
+    <div>단독 실행 HTML (인라인 빌드) <span class="badge done">완료</span></div>
+  </div>
+  <div class="roadmap-row">
+    <div class="step-num">4</div>
+    <div>모바일 (Capacitor) <span class="badge planned">예정</span></div>
+  </div>
+  <div class="roadmap-row">
+    <div class="step-num">5</div>
+    <div>Steam <span class="badge planned">예정</span></div>
+  </div>
+</div>
+
+<!-- 2. 게임 규칙 -->
+<h2>2. 게임 규칙</h2>
+
+<div class="grid grid-3">
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">보드</p>
+    <p style="font-size:1.4rem;font-weight:700;color:var(--accent)">5 × 5</p>
+    <p style="font-size:13px">격자</p>
+  </div>
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">플레이어</p>
+    <p style="font-size:1.4rem;font-weight:700;color:var(--accent)">2명</p>
+    <p style="font-size:13px">플레이어 vs AI</p>
+  </div>
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">승리 조건</p>
+    <p style="font-size:1rem;font-weight:700;color:var(--success)">왕 포획</p>
+    <p style="font-size:13px">또는 체크메이트</p>
+  </div>
+</div>
+
+<h3>시작 배치</h3>
+<div class="board-demo">
+  <div class="ai">행 0: [  .  ][  .  ][AI K][  .  ][  .  ]   ← AI 왕 (중앙 고정)</div>
+  <div class="ai">행 1: [AI P][AI P][  .  ][AI P][AI P]       ← AI 폰 4개</div>
+  <div>행 2: [  .  ][  .  ][  .  ][  .  ][  .  ]   ← 빈 칸</div>
+  <div class="player">행 3: [  .  ][  .  ][  .  ][  .  ][  .  ]   ← 플레이어 배치 구역</div>
+  <div class="player">행 4: [  .  ][  .  ][PL K][  .  ][  .  ]   ← 플레이어 왕 (중앙 고정)</div>
+</div>
+<blockquote>
+  <strong>쉬움 / 보통:</strong> 배치 페이즈 없이 자동 랜덤 배치 후 즉시 게임 시작<br>
+  <strong>어려움:</strong> 배치 페이즈에서 하단 2행(행 3~4, 왕 칸 제외)에 폰 4개를 자유 배치
+</blockquote>
+
+<h3>턴 순서</h3>
+<div class="flow">
+  <div class="flow-box">턴 시작<br><small style="color:var(--accent)">마나 +2</small></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box">이동 또는 소환<br><small style="color:var(--text-muted)">(택 1)</small></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box">턴 종료<br><small style="color:#f07070">60초 초과 시 자동</small></div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-box">상대 턴<br><small style="color:var(--text-muted)">교대 반복</small></div>
+</div>
+<blockquote>"턴 종료" 버튼으로 수동 종료 / "기권" 버튼으로 즉시 패배 처리 가능</blockquote>
+
+<h3>이동 규칙</h3>
+<table>
+  <tr><th>말</th><th>이동</th><th>비고</th></tr>
+  <tr><td><span class="piece-icon">P</span>폰</td><td>전방 1칸 이동, 대각선 포획</td><td>끝 행 도달 시 퀸으로 자동 승급</td></tr>
+  <tr><td><span class="piece-icon">N</span>나이트</td><td>L자 점프</td><td></td></tr>
+  <tr><td><span class="piece-icon">B</span>비숍</td><td>대각선 슬라이드</td><td></td></tr>
+  <tr><td><span class="piece-icon">R</span>룩</td><td>직선 슬라이드</td><td></td></tr>
+  <tr><td><span class="piece-icon">Q</span>퀸</td><td>비숍 + 룩</td><td></td></tr>
+  <tr><td><span class="piece-icon">K</span>왕</td><td>인접 1칸</td><td>공격받는 칸으로는 이동 불가 (왕 안전 검사)</td></tr>
+</table>
+<blockquote>캐스링·앙파상 등 특수 규칙 없음. 플레이어 폰은 위(행 감소), AI 폰은 아래(행 증가)</blockquote>
+
+<h3>체크 / 체크메이트</h3>
+<div class="card">
+  <ul>
+    <li>왕이 공격받으면 <strong>체크</strong> 표시 (빨간 링 + 깜박임 연출)</li>
+    <li>체크메이트 판정: 이동으로 해제 불가 <strong>+ 소환으로도 해제 불가</strong> → 패배</li>
+    <li>UI 우측 패널에 "⚠ 체크!" 경고 텍스트 표시</li>
+  </ul>
+</div>
+
+<!-- 3. 마나 & 소환 -->
+<h2>3. 마나 & 소환 시스템</h2>
+
+<div class="grid grid-3">
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">턴당 충전</p>
+    <p style="font-size:2rem;font-weight:700;color:var(--accent)">+2</p>
+  </div>
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">최대 마나</p>
+    <p style="font-size:2rem;font-weight:700;color:var(--accent)">10</p>
+  </div>
+  <div class="card">
+    <p style="color:var(--text-muted);font-size:12px">시작 마나</p>
+    <p style="font-size:2rem;font-weight:700;color:var(--text-muted)">0</p>
+  </div>
+</div>
+
+<h3>소환 비용 & 인플레이션</h3>
+<table>
+  <tr><th>말</th><th>기본 비용</th><th>N번째 소환 비용</th><th>전략 포인트</th></tr>
+  <tr>
+    <td><span class="piece-icon">P</span>폰</td>
+    <td><span class="mana-cost">1</span></td>
+    <td>1 + N</td>
+    <td>빠른 빈틈 메우기, 물량 공세</td>
+  </tr>
+  <tr>
+    <td><span class="piece-icon">N</span>나이트</td>
+    <td><span class="mana-cost">3</span></td>
+    <td>3 + N</td>
+    <td>L자 점프로 기습 가능</td>
+  </tr>
+  <tr>
+    <td><span class="piece-icon">B</span>비숍</td>
+    <td><span class="mana-cost">3</span></td>
+    <td>3 + N</td>
+    <td>대각선 장악, 측면 압박</td>
+  </tr>
+  <tr>
+    <td><span class="piece-icon">R</span>룩</td>
+    <td><span class="mana-cost">5</span></td>
+    <td>5 + N</td>
+    <td>열/행 전체 장악</td>
+  </tr>
+  <tr>
+    <td><span class="piece-icon">Q</span>퀸</td>
+    <td><span class="mana-cost">8</span></td>
+    <td>8 + N</td>
+    <td>가장 강력, 후반 역전카드</td>
+  </tr>
+</table>
+<blockquote>같은 종류의 말을 반복 소환할수록 비용이 1씩 증가 (N = 해당 말 소환 횟수). UI 버튼에 현재 실제 비용이 동적으로 표시됨.</blockquote>
+
+<div class="card">
+  <h3 style="margin-top:0">소환 규칙</h3>
+  <ul>
+    <li>소환 위치: 자신의 왕 기준 인접 8칸 중 <strong>빈 칸</strong>만 가능</li>
+    <li>소환하면 이동 불가, 이동하면 소환 불가 (턴당 1회)</li>
+    <li>소환 직후 해당 말은 그 턴에 이동 불가, <strong>다음 턴부터 이동 가능</strong></li>
+    <li>왕은 소환 불가 (처음부터 배치)</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">소환 버튼 조작</h3>
+  <ul>
+    <li>소환 버튼 클릭 → 소환 대기 모드 (소환 가능 칸 초록 하이라이트, 버튼 주황 강조)</li>
+    <li><strong>같은 버튼 재클릭</strong> → 소환 취소 (대기 모드 해제)</li>
+    <li><strong>다른 버튼 클릭</strong> → 소환 대상 즉시 변경</li>
+  </ul>
+</div>
+
+<!-- 4. UI -->
+<h2>4. UI / 화면 구성</h2>
+
+<h3>씬 흐름</h3>
+<div class="flow" style="flex-direction:column;align-items:flex-start;">
+  <div class="flow-box" style="min-width:240px">메인 메뉴 (난이도 선택)</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box" style="min-width:240px">배치 페이즈<br><small style="color:var(--text-muted)">어려움만 / 쉬움·보통은 자동 처리</small></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box" style="min-width:240px">게임 (보드 + HUD 오버레이)</div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box" style="min-width:240px">결과 화면 (승 / 패)</div>
+  <div class="flow-arrow">↓</div>
+  <div style="display:flex;gap:12px;">
+    <div class="flow-box">다시하기 → 배치 페이즈</div>
+    <div class="flow-box">메인 메뉴 → 메인 메뉴</div>
+  </div>
+</div>
+
+<h3>인게임 HUD (우측 패널)</h3>
+<table>
+  <tr><th>위치</th><th>표시 내용</th></tr>
+  <tr><td>상단</td><td>현재 턴 표시 (내 턴 / AI 턴)</td></tr>
+  <tr><td>타이머</td><td>60초 카운트다운 (10초 이하: 빨간색)</td></tr>
+  <tr><td>마나</td><td>현재 마나 / 최대(10)</td></tr>
+  <tr><td>행동 현황</td><td>○/✓ 이동 &nbsp;&nbsp; ○/✓ 소환 (완료 시 초록색 체크)</td></tr>
+  <tr><td>소환 버튼 5개</td><td>마나 부족·이미 소환 시 비활성 / 활성 시 주황 하이라이트</td></tr>
+  <tr><td>체크 경고</td><td>⚠ 체크! 텍스트 (체크 상태 시만 표시)</td></tr>
+  <tr><td>턴 종료 버튼</td><td>수동 턴 종료</td></tr>
+  <tr><td>기권 버튼</td><td>즉시 패배 처리</td></tr>
+</table>
+
+<h3>보드 시각 피드백</h3>
+<table>
+  <tr><th>상황</th><th>표시</th></tr>
+  <tr><td>말 선택</td><td style="color:var(--warn)">노란색 하이라이트</td></tr>
+  <tr><td>이동 가능 칸</td><td style="color:var(--success)">초록색 하이라이트</td></tr>
+  <tr><td>소환 가능 칸</td><td style="color:var(--success)">초록색 하이라이트</td></tr>
+  <tr><td>체크 위협 왕</td><td style="color:#f07070">빨간 링 + 깜박임 애니메이션</td></tr>
+  <tr><td>활성 소환 버튼</td><td style="color:#ffaa00">주황색 강조</td></tr>
+</table>
+
+<h3>연출 / 애니메이션</h3>
+<div class="card">
+  <div class="anim-row">
+    <div class="anim-icon">→</div>
+    <div><strong>말 이동</strong> — 부드러운 슬라이드 트윈. 애니메이션 중 입력 차단.</div>
+  </div>
+  <div class="anim-row">
+    <div class="anim-icon">✕</div>
+    <div><strong>포획</strong> — 포획된 말 깜박임 후 제거.</div>
+  </div>
+  <div class="anim-row">
+    <div class="anim-icon" style="color:var(--warn)">★</div>
+    <div><strong>소환</strong> — 황금빛 버스트 이펙트.</div>
+  </div>
+  <div class="anim-row">
+    <div class="anim-icon" style="color:#f07070">!</div>
+    <div><strong>체크</strong> — 왕에 빨간 링 표시, 2회 깜박임.</div>
+  </div>
+</div>
+
+<h3>전장의 안개 (Fog of War)</h3>
+<div class="card">
+  <ul>
+    <li>플레이어 말들의 실제 이동 경로 위 칸만 보임</li>
+    <li>나이트: L자 도착 칸 포함</li>
+    <li>슬라이드 말(비숍/룩/퀸): 경로 전체 칸 표시</li>
+    <li><strong>체크를 건 적 말은 안개와 무관하게 항상 표시</strong></li>
+  </ul>
+</div>
+
+<!-- 5. AI -->
+<h2>5. AI 시스템</h2>
+
+<table class="ai-table">
+  <tr><th>난이도</th><th>배치</th><th>이동 전략</th><th>소환 전략</th></tr>
+  <tr>
+    <td><strong>쉬움</strong></td>
+    <td>자동 랜덤</td>
+    <td>랜덤 이동 (자기 체크 회피 시도)</td>
+    <td>랜덤 소환</td>
+  </tr>
+  <tr>
+    <td><strong>보통</strong></td>
+    <td>자동 랜덤</td>
+    <td>포획 우선 (가치 높은 순, 자기 체크 제외), 이후 랜덤</td>
+    <td>마나 충족 시 랜덤 소환</td>
+  </tr>
+  <tr>
+    <td><strong>어려움</strong></td>
+    <td>수동 배치</td>
+    <td>Minimax + 알파베타 가지치기 (탐색 깊이 3)</td>
+    <td>상황 평가 후 최적 소환</td>
+  </tr>
+</table>
+
+<h3>어려움 AI 평가 함수</h3>
+<div class="eval-box">
+점수 = Σ(자신의 말 가치) - Σ(상대 말 가치)<br>
+&nbsp;&nbsp;&nbsp;&nbsp; + 중앙(3×3) 장악 보너스 (말당 +0.1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp; + 상대 체크 시 +2<br>
+&nbsp;&nbsp;&nbsp;&nbsp; - 자신 체크 시 -2<br>
+&nbsp;&nbsp;&nbsp;&nbsp; + 상대 체크메이트 시 +10000
+</div>
+<blockquote>5×5 보드 특성상 탐색 깊이 3으로도 충분히 강한 AI 구현 가능</blockquote>
+
+<!-- 6. 밸런스 -->
+<h2>6. 밸런스</h2>
+
+<div class="grid grid-3">
+  <div class="card">
+    <h3 style="margin-top:0">폰 중심 초반</h3>
+    <p style="font-size:14px">마나 0에서 시작하므로 초반 2~3턴은 폰만으로 싸워야 함</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">왕 노출 리스크</h3>
+    <p style="font-size:14px">소환하려면 왕 주변 칸이 필요하므로, 왕을 너무 가두면 소환 불가</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">소환 인플레이션</h3>
+    <p style="font-size:14px">같은 종류 반복 소환 시 비용 +1 증가 → 단일 말 물량 전략 억제</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">좁은 보드 후반 강세</h3>
+    <p style="font-size:14px">5×5에서 룩 1개만 있어도 열 전체를 장악 → 후반 룩/퀸 강세</p>
+  </div>
+</div>
+
+<h3>향후 밸런스 조정 포인트</h3>
+<div class="card">
+  <ul>
+    <li>마나 충전량 조정 (현재 2/턴 → 난이도별 차등 가능)</li>
+    <li>최대 마나 상한 조정 (현재 10)</li>
+    <li>소환 비용 개별 조정</li>
+    <li>소환 인플레이션 폭 조정 (+1 → 다른 값)</li>
+    <li>왕 주변이 꽉 찼을 때 소환 불가 → 방어가 공격을 막는 딜레마 심화</li>
+  </ul>
+</div>
+
+<!-- 7. 배포 -->
+<h2>7. 배포</h2>
+
+<table>
+  <tr><th>형태</th><th>파일명</th><th>비고</th></tr>
+  <tr>
+    <td>Windows 포터블 실행파일</td>
+    <td>ChessSummon_v0.1.0_portable.exe</td>
+    <td>Electron 래핑, 설치 불필요</td>
+  </tr>
+  <tr>
+    <td>단독 HTML</td>
+    <td>ChessSummon_v0.1.0.html</td>
+    <td>vite-plugin-singlefile 인라인 빌드, 브라우저에서 바로 실행</td>
+  </tr>
+</table>
+
+<!-- 8. 향후 계획 -->
+<h2>8. MVP 범위 외 (향후 구현)</h2>
+
+<table>
+  <tr><th>기능</th><th>우선순위</th></tr>
+  <tr><td>멀티플레이어 (온라인)</td><td class="priority-high">높음</td></tr>
+  <tr><td>모바일 빌드 (Capacitor)</td><td class="priority-high">높음</td></tr>
+  <tr><td>Steam 출시 (Electron)</td><td class="priority-mid">중간</td></tr>
+  <tr><td>사운드 효과 / BGM</td><td class="priority-mid">중간</td></tr>
+  <tr><td>턴 전환 연출 강화</td><td class="priority-mid">중간</td></tr>
+  <tr><td>랭킹 / 전적 시스템</td><td class="priority-low">낮음</td></tr>
+  <tr><td>커스텀 보드 크기</td><td class="priority-low">낮음</td></tr>
+  <tr><td>캠페인 / 튜토리얼</td><td class="priority-low">낮음</td></tr>
+</table>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);color:var(--text-muted);font-size:12px;text-align:center;">
+  Chess Summon v0.1.0 기획서 · 2026-05-12
+</div>
+
+</div>
+</body>
+</html>

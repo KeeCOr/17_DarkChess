@@ -2,6 +2,13 @@ import { Piece } from './Piece.js';
 import { SUMMON_COSTS } from '../config.js';
 
 export class SummonSystem {
+  getCost(board, owner, pieceType) {
+    const base = SUMMON_COSTS[pieceType];
+    if (base === undefined) return Infinity;
+    const count = board.summonCounts?.[owner]?.[pieceType] || 0;
+    return base + count;
+  }
+
   getSummonableSquares(board, owner) {
     const kingPos = board.findKing(owner);
     if (!kingPos) return [];
@@ -17,13 +24,16 @@ export class SummonSystem {
   }
 
   canSummon(board, owner, pieceType) {
-    const cost = SUMMON_COSTS[pieceType];
-    if (cost === undefined || board.mana[owner] < cost) return false;
+    const cost = this.getCost(board, owner, pieceType);
+    if (board.mana[owner] < cost) return false;
     return this.getSummonableSquares(board, owner).length > 0;
   }
 
   summon(board, owner, pieceType, row, col) {
-    board.spendMana(owner, SUMMON_COSTS[pieceType]);
+    const cost = this.getCost(board, owner, pieceType);
+    board.spendMana(owner, cost);
     board.setPiece(row, col, new Piece(pieceType, owner));
+    if (!board.summonCounts[owner]) board.summonCounts[owner] = {};
+    board.summonCounts[owner][pieceType] = (board.summonCounts[owner][pieceType] || 0) + 1;
   }
 }

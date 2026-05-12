@@ -1,9 +1,12 @@
 import { MoveCalculator } from './MoveCalculator.js';
-import { BOARD_SIZE } from '../config.js';
+import { SummonSystem } from './SummonSystem.js';
+import { Piece } from './Piece.js';
+import { BOARD_SIZE, PieceType, SUMMON_COSTS } from '../config.js';
 
 export class CheckDetector {
   constructor() {
     this.calculator = new MoveCalculator();
+    this.summonSys = new SummonSystem();
   }
 
   getThreats(board, kingOwner) {
@@ -28,6 +31,8 @@ export class CheckDetector {
 
   isCheckmate(board, owner) {
     if (!this.isInCheck(board, owner)) return false;
+
+    // Check if any move resolves check
     const pieces = board.getAllPieces(owner);
     for (const { row, col } of pieces) {
       const moves = this.calculator.getMoves(board, row, col);
@@ -37,6 +42,21 @@ export class CheckDetector {
         if (!this.isInCheck(clone, owner)) return false;
       }
     }
+
+    // Check if any summon resolves check
+    const squares = this.summonSys.getSummonableSquares(board, owner);
+    for (const sq of squares) {
+      for (const type of Object.values(PieceType)) {
+        if (type === PieceType.KING) continue;
+        const cost = this.summonSys.getCost(board, owner, type);
+        if (board.mana[owner] >= cost) {
+          const clone = board.clone();
+          clone.setPiece(sq.row, sq.col, new Piece(type, owner));
+          if (!this.isInCheck(clone, owner)) return false;
+        }
+      }
+    }
+
     return true;
   }
 }

@@ -27,7 +27,10 @@ export class MenuScene extends Phaser.Scene {
       this.add.text(cx, y, label, { fontSize: '22px', color: '#ffffff' }).setOrigin(0.5);
       btn.on('pointerover', () => btn.setFillStyle(COLORS.BUTTON_HOVER));
       btn.on('pointerout', () => btn.setFillStyle(COLORS.BUTTON_BG));
-      btn.on('pointerdown', () => this.scene.start('Placement', { difficulty: value }));
+      btn.on('pointerdown', () => {
+        this.scene.start('Placement', { difficulty: value });
+      });
     }
   }
+
 }

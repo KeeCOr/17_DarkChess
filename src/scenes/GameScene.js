@@ -42,6 +42,9 @@ export class GameScene extends Phaser.Scene {
     this.hasMoved = false;
     this.hasSummoned = false;
     this.fogGraphics = [];
+    this.animating = false;
+    this.checkRing = null;
+    this.summonedCells = new Set();
 
     this._setupBoard();
     this._drawBoard();
@@ -96,14 +99,23 @@ export class GameScene extends Phaser.Scene {
     for (let r = 0; r < BOARD_SIZE; r++)
       for (let c = 0; c < BOARD_SIZE; c++) {
         const piece = this.board.getPiece(r, c);
-        if (piece && piece.owner === Owner.PLAYER)
-          for (let dr = -2; dr <= 2; dr++)
-            for (let dc = -2; dc <= 2; dc++) {
-              const nr = r + dr, nc = c + dc;
-              if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE)
-                visible.add(`${nr},${nc}`);
-            }
+        if (!piece || piece.owner !== Owner.PLAYER) continue;
+        // 자신의 위치
+        visible.add(`${r},${c}`);
+        // 인접 1칸
+        for (let dr = -1; dr <= 1; dr++)
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE)
+              visible.add(`${nr},${nc}`);
+          }
+        // 이동 가능한 모든 경로
+        const moves = this.calc.getMoves(this.board, r, c);
+        for (const m of moves) visible.add(`${m.row},${m.col}`);
       }
+    // 체크를 거는 적 기물은 항상 보임
+    const threats = this.detector.getThreats(this.board, Owner.PLAYER);
+    for (const t of threats) visible.add(`${t.row},${t.col}`);
     return visible;
   }
 
@@ -117,7 +129,7 @@ export class GameScene extends Phaser.Scene {
           const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE;
           const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE;
           const g = this.add.graphics();
-          g.fillStyle(0x000000, 0.65);
+          g.fillStyle(0x000000, 1);
           g.fillRect(x, y, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
           g.setDepth(2);
           this.fogGraphics.push(g);
@@ -157,22 +169,25 @@ export class GameScene extends Phaser.Scene {
 
   _onCellClick(r, c) {
     if (this.state === State.AI_TURN || this.state === State.GAME_OVER) return;
+    if (this.animating) return;
 
     if (this.state === State.SUMMON_MODE) {
       const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
       if (squares.some(s => s.row === r && s.col === c)) {
         this.summonSys.summon(this.board, Owner.PLAYER, this.pendingSummonType, r, c);
         this.hasSummoned = true;
-        this._refreshBoard();
+        this.summonedCells.add(`${r},${c}`);
         this._clearHighlights();
         this.state = State.WAITING;
         this.pendingSummonType = null;
+        this._refreshBoard();
+        this._animateSummon(r, c);
         this._checkGameOver();
         if (this.state === State.GAME_OVER) return;
         if (this.hasMoved) { this._endTurn(); return; }
         this._showMovablePieces();
         this._showThreatsIfInCheck();
-        this.events.emit('player-action', { hasSummoned: this.hasSummoned, mana: this.board.mana[Owner.PLAYER] });
+        this._emitPlayerAction();
         return;
       }
       this._clearHighlights();
@@ -182,7 +197,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.state === State.SELECTED) {
-      // Same cell clicked — deselect
       if (this.selectedCell.row === r && this.selectedCell.col === c) {
         this._clearHighlights();
         this.state = State.WAITING;
@@ -193,19 +207,24 @@ export class GameScene extends Phaser.Scene {
       }
       const moves = this.calc.getMoves(this.board, this.selectedCell.row, this.selectedCell.col);
       if (moves.some(m => m.row === r && m.col === c)) {
-        this.board.movePiece(this.selectedCell.row, this.selectedCell.col, r, c);
-        this.hasMoved = true;
-        this._checkPromotion();
-        this._refreshBoard();
+        const isCapture = !!this.board.getPiece(r, c);
+        const { row: fr, col: fc } = this.selectedCell;
         this._clearHighlights();
         this.state = State.WAITING;
         this.selectedCell = null;
-        this._checkGameOver();
-        if (this.state === State.GAME_OVER) return;
-        if (this.hasSummoned) { this._endTurn(); return; }
-        this._showMovablePieces();
-        this._showThreatsIfInCheck();
-        this.events.emit('player-action', { hasSummoned: this.hasSummoned, mana: this.board.mana[Owner.PLAYER] });
+        this.animating = true;
+        this._animateMove(fr, fc, r, c, isCapture, () => {
+          this.animating = false;
+          this.board.movePiece(fr, fc, r, c);
+          this.hasMoved = true;
+          this._checkPromotion();
+          this._refreshBoard();
+          this._checkGameOver();
+          if (this.state === State.GAME_OVER) return;
+          if (this.hasSummoned) { this._endTurn(); return; }
+          this._showThreatsIfInCheck();
+          this._emitPlayerAction();
+        });
         return;
       }
       this._clearHighlights();
@@ -217,6 +236,8 @@ export class GameScene extends Phaser.Scene {
 
     const piece = this.board.getPiece(r, c);
     if (piece && piece.owner === Owner.PLAYER) {
+      if (this.hasMoved) return;
+      if (this.summonedCells.has(`${r},${c}`)) return;
       this.state = State.SELECTED;
       this.selectedCell = { row: r, col: c };
       const moves = this.calc.getMoves(this.board, r, c);
@@ -227,12 +248,87 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _animateMove(fr, fc, tr, tc, isCapture, callback) {
+    const fromX = LAYOUT.BOARD_OFFSET_X + fc * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const fromY = LAYOUT.BOARD_OFFSET_Y + fr * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const toX = LAYOUT.BOARD_OFFSET_X + tc * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const toY = LAYOUT.BOARD_OFFSET_Y + tr * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const piece = this.board.getPiece(fr, fc);
+
+    if (isCapture) {
+      const cx = LAYOUT.BOARD_OFFSET_X + tc * LAYOUT.CELL_SIZE;
+      const cy = LAYOUT.BOARD_OFFSET_Y + tr * LAYOUT.CELL_SIZE;
+      const flash = this.add.graphics();
+      flash.fillStyle(0xff2200, 0.9);
+      flash.fillRect(cx, cy, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+      flash.setDepth(6);
+      this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+    }
+
+    if (!piece) { callback(); return; }
+
+    const isKing = piece.type === PieceType.KING;
+    const color = isKing
+      ? (piece.owner === Owner.PLAYER ? TEXT_COLORS.KING_PLAYER : TEXT_COLORS.KING_AI)
+      : (piece.owner === Owner.PLAYER ? TEXT_COLORS.PLAYER_PIECE : TEXT_COLORS.AI_PIECE);
+
+    const origObj = this.pieceObjects[`${fr},${fc}`];
+    if (origObj) origObj.setVisible(false);
+
+    const animPiece = this.add.text(fromX, fromY, PIECE_LABELS[piece.type], {
+      fontSize: isKing ? '30px' : '26px', color, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(6);
+
+    this.tweens.add({
+      targets: animPiece,
+      x: toX,
+      y: toY,
+      duration: 200,
+      ease: 'Power2',
+      onComplete: () => {
+        animPiece.destroy();
+        callback();
+      },
+    });
+  }
+
+  _animateSummon(r, c) {
+    const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+    const flash = this.add.graphics();
+    flash.fillStyle(0xffdd00, 0.9);
+    flash.fillCircle(x, y, LAYOUT.CELL_SIZE / 2);
+    flash.setDepth(6);
+    this.tweens.add({ targets: flash, alpha: 0, scaleX: 2, scaleY: 2, duration: 400, onComplete: () => flash.destroy() });
+  }
+
+  _animateCheck() {
+    const kingPos = this.board.findKing(Owner.PLAYER);
+    if (!kingPos) return;
+    // 킹 셀에 빨간 테두리 표시
+    if (this.checkRing) { this.checkRing.destroy(); this.checkRing = null; }
+    const x = LAYOUT.BOARD_OFFSET_X + kingPos.col * LAYOUT.CELL_SIZE;
+    const y = LAYOUT.BOARD_OFFSET_Y + kingPos.row * LAYOUT.CELL_SIZE;
+    const ring = this.add.graphics();
+    ring.lineStyle(4, 0xff2200, 1);
+    ring.strokeRect(x + 2, y + 2, LAYOUT.CELL_SIZE - 4, LAYOUT.CELL_SIZE - 4);
+    ring.setDepth(5);
+    this.checkRing = ring;
+    // 테두리 깜빡임
+    this.tweens.add({ targets: ring, alpha: 0.3, duration: 300, yoyo: true, repeat: 3 });
+  }
+
+  _clearCheckRing() {
+    if (this.checkRing) { this.checkRing.destroy(); this.checkRing = null; }
+  }
+
   _showMovablePieces() {
+    if (this.hasMoved) return;
     const movable = [];
     for (let r = 0; r < BOARD_SIZE; r++)
       for (let c = 0; c < BOARD_SIZE; c++) {
         const piece = this.board.getPiece(r, c);
-        if (piece && piece.owner === Owner.PLAYER) {
+        if (piece && piece.owner === Owner.PLAYER && !this.summonedCells.has(`${r},${c}`)) {
           const moves = this.calc.getMoves(this.board, r, c);
           if (moves.length > 0) movable.push({ row: r, col: c });
         }
@@ -245,9 +341,20 @@ export class GameScene extends Phaser.Scene {
       const threats = this.detector.getThreats(this.board, Owner.PLAYER);
       this._highlightCells(threats, COLORS.THREAT, 0.7);
       this.events.emit('check', true);
+      this._animateCheck();
     } else {
+      this._clearCheckRing();
       this.events.emit('check', false);
     }
+  }
+
+  _emitPlayerAction() {
+    this.events.emit('player-action', {
+      hasMoved: this.hasMoved,
+      hasSummoned: this.hasSummoned,
+      mana: this.board.mana[Owner.PLAYER],
+      summonCounts: this.board.summonCounts[Owner.PLAYER],
+    });
   }
 
   _startTurn(owner) {
@@ -256,6 +363,7 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft = TURN_TIME_LIMIT;
     this.hasMoved = false;
     this.hasSummoned = false;
+    this.summonedCells = new Set();
 
     if (this.turnTimer) this.turnTimer.remove();
     this.turnTimer = null;
@@ -264,6 +372,7 @@ export class GameScene extends Phaser.Scene {
       turn: owner,
       mana: this.board.mana,
       timeLeft: this.timeLeft,
+      summonCounts: this.board.summonCounts[Owner.PLAYER],
     });
 
     if (owner === Owner.AI) {
@@ -302,14 +411,43 @@ export class GameScene extends Phaser.Scene {
   _doAITurn() {
     const moveAction = this.ai.getMove(this.board);
     if (moveAction) {
+      const isCapture = !!this.board.getPiece(moveAction.to.row, moveAction.to.col);
+      const visible = this._getVisibleCells();
+      const srcVisible = visible.has(`${moveAction.from.row},${moveAction.from.col}`);
+      if (srcVisible) {
+        this.animating = true;
+        this._animateMove(moveAction.from.row, moveAction.from.col, moveAction.to.row, moveAction.to.col, isCapture, () => {
+          this.animating = false;
+          this.board.movePiece(moveAction.from.row, moveAction.from.col, moveAction.to.row, moveAction.to.col);
+          this._doAIPostMove();
+        });
+        return;
+      } else if (isCapture && visible.has(`${moveAction.to.row},${moveAction.to.col}`)) {
+        const cx = LAYOUT.BOARD_OFFSET_X + moveAction.to.col * LAYOUT.CELL_SIZE;
+        const cy = LAYOUT.BOARD_OFFSET_Y + moveAction.to.row * LAYOUT.CELL_SIZE;
+        const flash = this.add.graphics();
+        flash.fillStyle(0xff2200, 0.9);
+        flash.fillRect(cx, cy, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+        flash.setDepth(6);
+        this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+      }
       this.board.movePiece(moveAction.from.row, moveAction.from.col, moveAction.to.row, moveAction.to.col);
     }
+    this._doAIPostMove();
+  }
+
+  _doAIPostMove() {
     const summonAction = this.ai.getSummon(this.board);
     if (summonAction) {
       this.summonSys.summon(this.board, Owner.AI, summonAction.pieceType, summonAction.to.row, summonAction.to.col);
     }
     this._checkPromotion();
     this._refreshBoard();
+    if (summonAction) {
+      const visible = this._getVisibleCells();
+      if (visible.has(`${summonAction.to.row},${summonAction.to.col}`))
+        this._animateSummon(summonAction.to.row, summonAction.to.col);
+    }
     this._checkGameOver();
     if (this.state !== State.GAME_OVER) this._endTurn();
   }
@@ -336,8 +474,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   startSummonMode(pieceType) {
-    if (this.state !== State.WAITING) return;
     if (this.hasSummoned) return;
+    // 같은 버튼 → 취소
+    if (this.state === State.SUMMON_MODE && this.pendingSummonType === pieceType) {
+      this._clearHighlights();
+      this.pendingSummonType = null;
+      this.state = State.WAITING;
+      this._showMovablePieces();
+      this.events.emit('summon-cancel');
+      return;
+    }
+    if (this.state !== State.WAITING && this.state !== State.SUMMON_MODE) return;
     if (!this.summonSys.canSummon(this.board, Owner.PLAYER, pieceType)) return;
     this.pendingSummonType = pieceType;
     this.state = State.SUMMON_MODE;
@@ -361,6 +508,12 @@ export class GameScene extends Phaser.Scene {
     if (this.state === State.WAITING && this.board.currentTurn === Owner.PLAYER) this._endTurn();
   }
 
+  surrender() {
+    if (this.state === State.GAME_OVER) return;
+    this._gameOver(Owner.AI);
+  }
+
   getMana() { return this.board.mana; }
   getCurrentTurn() { return this.board.currentTurn; }
+  getSummonCounts() { return this.board.summonCounts[Owner.PLAYER]; }
 }

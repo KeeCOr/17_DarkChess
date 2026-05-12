@@ -1,5 +1,5 @@
 // src/scenes/PlacementScene.js
-import { LAYOUT, COLORS, PieceType, Owner } from '../config.js';
+import { LAYOUT, COLORS, PieceType, Owner, Difficulty } from '../config.js';
 
 const KING_ROW = 4, KING_COL = 2;
 const PAWN_COUNT = 4;
@@ -14,6 +14,12 @@ export class PlacementScene extends Phaser.Scene {
   }
 
   create() {
+    // EASY / MEDIUM: 자동 배치 후 즉시 게임 시작
+    if (this.difficulty !== Difficulty.HARD) {
+      this._autoStart();
+      return;
+    }
+
     const cx = LAYOUT.GAME_WIDTH / 2;
     this.add.rectangle(cx, LAYOUT.GAME_HEIGHT / 2, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
 
@@ -37,11 +43,7 @@ export class PlacementScene extends Phaser.Scene {
 
     this.readyBtn.on('pointerdown', () => {
       if (this.pawnCount < PAWN_COUNT) return;
-      const placements = Object.keys(this.placed).map(key => {
-        const [r, c] = key.split(',').map(Number);
-        return { row: r, col: c };
-      });
-      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
+      this._startGame();
     });
   }
 
@@ -89,6 +91,31 @@ export class PlacementScene extends Phaser.Scene {
       cell.setFillStyle(0x4a90d9);
     }
     this._updateReadyButton();
+  }
+
+  _autoStart() {
+    const cells = [];
+    for (let r = 3; r <= 4; r++)
+      for (let c = 0; c < 5; c++)
+        if (!(r === KING_ROW && c === KING_COL)) cells.push({ row: r, col: c });
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+    const placements = cells.slice(0, PAWN_COUNT);
+    this.time.delayedCall(50, () => {
+      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
+    });
+  }
+
+  _startGame() {
+    const placements = Object.keys(this.placed).map(key => {
+      const [r, c] = key.split(',').map(Number);
+      return { row: r, col: c };
+    });
+    this.time.delayedCall(50, () => {
+      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
+    });
   }
 
   _randomizePawns() {

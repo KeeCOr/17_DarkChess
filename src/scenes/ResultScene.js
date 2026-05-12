@@ -36,4 +36,5 @@ export class ResultScene extends Phaser.Scene {
       this.scene.start('Menu');
     });
   }
+
 }
