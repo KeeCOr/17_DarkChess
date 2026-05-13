@@ -526,6 +526,7 @@ export class GameScene extends Phaser.Scene {
   _endTurn() {
     if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
     this._clearHighlights();
+    this.selectedCell = null;
     this.pendingSummonType = null;
     this.state = State.WAITING;
     this._updateHint('ai');
@@ -635,7 +636,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   endTurnManually() {
-    if (this.state === State.WAITING && this.board.currentTurn === Owner.PLAYER) {
+    const canEnd = [State.WAITING, State.SELECTED, State.SUMMON_MODE].includes(this.state);
+    if (canEnd && this.board.currentTurn === Owner.PLAYER && !this.animating) {
       if (this.tutorialMode) this.events.emit('tutorial-turn-ended');
       this._endTurn();
     }

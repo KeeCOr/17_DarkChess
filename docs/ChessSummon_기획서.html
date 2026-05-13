@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <title>Chess Summon 기획서 v0.1.5</title>
+  <title>Chess Summon 기획서 v0.1.7</title>
   <style>
     body { margin: 0; background: #111426; color: #eef2ff; font-family: Arial, "Malgun Gothic", sans-serif; line-height: 1.6; }
     main { max-width: 880px; margin: 0 auto; padding: 40px 28px 72px; }
@@ -20,7 +20,7 @@
 <body>
 <main>
   <h1>Chess Summon 기획서</h1>
-  <p class="meta"><strong>버전:</strong> 0.1.5<br><strong>최종 수정:</strong> 2026-05-13<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
+  <p class="meta"><strong>버전:</strong> 0.1.7<br><strong>최종 수정:</strong> 2026-05-13<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
 
   <h2>1. 게임 개요</h2>
   <p>Chess Summon은 5x5 체스판에서 왕을 지키며 마나로 새로운 말을 소환하는 전술 게임이다. 플레이어는 제한된 시야와 60초 턴 안에서 이동 또는 소환을 선택한다.</p>
@@ -51,6 +51,8 @@
   <p>같은 종류를 반복 소환할수록 비용이 1씩 증가한다. 소환은 아군 말 주변 8칸의 빈 칸에만 가능하다.</p>
 
   <h2>4. UI / UX</h2>
+  <p>v0.1.7에서는 말을 선택해 이동 가능 칸이 표시된 상태에서도 <strong>턴 종료</strong> 버튼을 누르면 즉시 턴을 종료할 수 있게 했다. 턴 종료 시 선택된 말, 이동 하이라이트, 소환 대기 상태를 정리해 다음 턴 UI에 이전 선택 상태가 남지 않게 했다.</p>
+  <p>v0.1.6에서는 보유 마나 표시를 HUD 상단에서 소환 카드 섹션 내부로 이동해 소환 비용과 같은 맥락으로 보이게 했다. 소환 카드의 오른쪽 상태 문구는 제거하고 버튼 색상, 투명도, 비용 아이콘 상태로 선택 가능 여부를 전달해 글자 겹침과 잘림을 줄였다. 소환 안내, 마나 배지, 소환 카드 목록 사이의 Y 좌표를 레이아웃 상수로 분리해 오른쪽 HUD가 서로 침범하지 않도록 했다.</p>
   <p>v0.1.5에서는 상단 마나와 소환 비용에 같은 청록색 보석 아이콘을 적용했다. 소환 카드의 비용 텍스트는 제거하고 마나 아이콘 + 숫자로 표시해 비용이 마나임을 직관적으로 알 수 있게 했다.</p>
   <p>v0.1.4에서는 말 이미지의 투명 여백을 제거하고 256x256 정규화 에셋으로 재생성했다. 보드 말 렌더 크기는 86px로 조정해 칸 안에서 더 선명하고 크게 보이게 했다. HUD 패널, 소환 카드 행 간격, 하단 버튼 위치도 상수화해 겹침이 재발하지 않도록 했다.</p>
   <p>v0.1.3에서는 오른쪽 HUD의 긴 문구를 짧은 공통 문구로 정리하고, 소환 카드 내부 텍스트 크기와 위치를 조정해 글자 겹침과 잘림을 줄였다. 말 렌더 크기는 보드 칸 안에 들어오도록 제한했고, 72x72 public 말 이미지를 1024x1024 원본 캐릭터 에셋으로 교체해 이미지 깨짐을 제거했다.</p>
@@ -68,7 +70,7 @@
   </table>
 
   <h2>6. 배포</h2>
-  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.5_portable.exe</code></p>
+  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.7_portable.exe</code></p>
 </main>
 </body>
 </html>
