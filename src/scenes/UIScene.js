@@ -1,6 +1,6 @@
 // src/scenes/UIScene.js
 import {
-  COLORS, LAYOUT, Owner, PieceType, SUMMON_COSTS, PIECE_LABELS, TEXT_COLORS,
+  COLORS, LAYOUT, Owner, PieceType, SUMMON_COSTS, TEXT_COLORS,
 } from '../config.js';
 
 const SUMMONABLE = [PieceType.PAWN, PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN];
@@ -32,15 +32,19 @@ export class UIScene extends Phaser.Scene {
     this.moveStatus = this.add.text(PANEL_X, 167, '○ 이동', { fontSize: '14px', color: '#555555' });
     this.summonStatus = this.add.text(PANEL_X + 95, 167, '○ 소환', { fontSize: '14px', color: '#555555' });
 
-    this.add.text(PANEL_X, 193, '소환 (클릭 후 칸 선택)', { fontSize: '12px', color: TEXT_COLORS.MUTED });
+    this.add.text(PANEL_X, 193, '소환', { fontSize: '12px', color: TEXT_COLORS.MUTED });
     this.summonButtons = {};
     SUMMONABLE.forEach((type, i) => {
       const y = 225 + i * 52;
       const btn = this.add.rectangle(PANEL_X + 90, y, 190, 44, 0x1a1a2e).setInteractive().setAlpha(0.45);
-      const label = `${PIECE_LABELS[type]}  (${SUMMON_COSTS[type]} 마나)`;
-      const txt = this.add.text(PANEL_X + 90, y, label, {
-        fontSize: '16px', color: '#444466',
+      // 말 아이콘
+      const icon = this.add.image(PANEL_X + 20, y, `${type.toLowerCase()}_w`)
+        .setDisplaySize(32, 32).setAlpha(0.3);
+      // 마나 비용 숫자만 표시
+      const txt = this.add.text(PANEL_X + 90, y, String(SUMMON_COSTS[type]), {
+        fontSize: '20px', color: '#444466', fontStyle: 'bold',
       }).setOrigin(0.5).setAlpha(0.5);
+
       btn.on('pointerover', () => { if (btn.getData('enabled') && !btn.getData('active')) btn.setFillStyle(COLORS.BUTTON_HOVER); });
       btn.on('pointerout', () => { if (btn.getData('enabled') && !btn.getData('active')) btn.setFillStyle(COLORS.BUTTON_BG); });
       btn.on('pointerdown', () => {
@@ -48,7 +52,7 @@ export class UIScene extends Phaser.Scene {
         this.gameScene.startSummonMode(type);
         this._highlightActiveSummon(btn.getData('active') ? null : type);
       });
-      this.summonButtons[type] = { btn, txt };
+      this.summonButtons[type] = { btn, txt, icon };
     });
 
     this.checkText = this.add.text(PANEL_X, 497, '⚠ 체크!', {
@@ -64,19 +68,40 @@ export class UIScene extends Phaser.Scene {
     endBtn.on('pointerdown', () => this.gameScene.endTurnManually());
     this.endBtn = endBtn;
 
-    const surrenderBtn = this.add.rectangle(PANEL_X + 90, 580, 190, 36, 0x333333).setInteractive();
+    const surrenderBtn = this.add.rectangle(PANEL_X + 90, 580, 190, 28, 0x222222).setInteractive();
     this.add.text(PANEL_X + 90, 580, '기권', {
-      fontSize: '15px', color: '#aaaaaa',
+      fontSize: '13px', color: '#666666',
     }).setOrigin(0.5);
-    surrenderBtn.on('pointerover', () => surrenderBtn.setFillStyle(0x555555));
-    surrenderBtn.on('pointerout', () => surrenderBtn.setFillStyle(0x333333));
-    surrenderBtn.on('pointerdown', () => this.gameScene.surrender());
+    surrenderBtn.on('pointerover', () => surrenderBtn.setFillStyle(0x333333));
+    surrenderBtn.on('pointerout', () => surrenderBtn.setFillStyle(0x222222));
+    surrenderBtn.on('pointerdown', () => this._showSurrenderConfirm());
 
     this.gameScene.events.on('turn-start', this._onTurnStart, this);
     this.gameScene.events.on('timer-tick', this._onTimerTick, this);
     this.gameScene.events.on('check', this._onCheck, this);
     this.gameScene.events.on('player-action', this._onPlayerAction, this);
     this.gameScene.events.on('summon-cancel', this._onSummonCancel, this);
+  }
+
+  _showSurrenderConfirm() {
+    const cx = LAYOUT.GAME_WIDTH / 2, cy = LAYOUT.GAME_HEIGHT / 2;
+    const overlay = this.add.rectangle(cx, cy, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, 0x000000, 0.6).setDepth(50).setInteractive();
+    const border = this.add.rectangle(cx, cy, 284, 134, 0xff4444).setDepth(50);
+    const panel = this.add.rectangle(cx, cy, 280, 130, 0x1a1a2e).setDepth(51);
+    const msg = this.add.text(cx, cy - 30, '정말 기권하시겠습니까?', {
+      fontSize: '18px', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(52);
+
+    const yesBtn = this.add.rectangle(cx - 60, cy + 28, 100, 36, 0xaa2222).setInteractive().setDepth(52);
+    this.add.text(cx - 60, cy + 28, '기권', { fontSize: '16px', color: '#ffffff' }).setOrigin(0.5).setDepth(53);
+    const noBtn = this.add.rectangle(cx + 60, cy + 28, 100, 36, 0x333355).setInteractive().setDepth(52);
+    this.add.text(cx + 60, cy + 28, '취소', { fontSize: '16px', color: '#ffffff' }).setOrigin(0.5).setDepth(53);
+
+    const objs = [overlay, border, panel, msg, yesBtn, noBtn];
+    const close = () => objs.forEach(o => o.destroy());
+    yesBtn.on('pointerdown', () => { close(); this.gameScene.surrender(); });
+    noBtn.on('pointerdown', close);
+    overlay.on('pointerdown', close);
   }
 
   _onTurnStart({ turn, mana, timeLeft, summonCounts }) {
@@ -128,27 +153,29 @@ export class UIScene extends Phaser.Scene {
   }
 
   _refreshSummonButtons(playerMana, hasSummoned, summonCounts) {
-    for (const [type, { btn, txt }] of Object.entries(this.summonButtons)) {
+    for (const [type, { btn, txt, icon }] of Object.entries(this.summonButtons)) {
       const count = summonCounts?.[type] || 0;
       const cost = (SUMMON_COSTS[type] || 1) + count;
       const enabled = !hasSummoned && playerMana >= cost;
       btn.setData('enabled', enabled);
       btn.setFillStyle(enabled ? COLORS.BUTTON_BG : 0x1a1a2e);
       btn.setAlpha(enabled ? 1 : 0.45);
-      txt.setText(`${PIECE_LABELS[type]}  (${cost} 마나)`);
+      txt.setText(String(cost));
       txt.setColor(enabled ? TEXT_COLORS.PRIMARY : '#444466');
       txt.setAlpha(enabled ? 1 : 0.5);
+      icon.setAlpha(enabled ? 0.9 : 0.3);
     }
   }
 
   _highlightActiveSummon(activeType) {
-    for (const [type, { btn, txt }] of Object.entries(this.summonButtons)) {
+    for (const [type, { btn, txt, icon }] of Object.entries(this.summonButtons)) {
       const isActive = type === activeType;
       btn.setData('active', isActive);
       if (btn.getData('enabled')) {
         btn.setFillStyle(isActive ? 0xffaa00 : COLORS.BUTTON_BG);
         btn.setAlpha(1);
         txt.setColor(isActive ? '#1a1a2e' : TEXT_COLORS.PRIMARY);
+        icon.setAlpha(1);
       }
     }
   }

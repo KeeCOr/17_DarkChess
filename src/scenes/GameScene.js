@@ -158,7 +158,7 @@ export class GameScene extends Phaser.Scene {
     const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
     const obj = this.add.image(x, y, key)
-      .setDisplaySize(72, 72)
+      .setDisplaySize(144, 144)
       .setDepth(4);
     this.pieceObjects[`${r},${c}`] = obj;
   }
@@ -285,7 +285,7 @@ export class GameScene extends Phaser.Scene {
 
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
     const animPiece = this.add.image(fromX, fromY, key)
-      .setDisplaySize(72, 72)
+      .setDisplaySize(144, 144)
       .setDepth(6);
 
     this.tweens.add({
