@@ -1,5 +1,6 @@
 // src/scenes/PlacementScene.js
-import { LAYOUT, COLORS, PieceType, Owner, Difficulty } from '../config.js';
+import { LAYOUT, COLORS, PieceType, Owner, Difficulty, TEXT_COLORS } from '../config.js';
+import { addStageBackground, addTextButton, UI_COPY } from '../ui/visuals.js';
 
 const KING_ROW = 4, KING_COL = 2;
 const PAWN_COUNT = 4;
@@ -14,57 +15,64 @@ export class PlacementScene extends Phaser.Scene {
   }
 
   create() {
-    // EASY / MEDIUM: 자동 배치 후 즉시 게임 시작
     if (this.difficulty !== Difficulty.HARD) {
       this._autoStart();
       return;
     }
 
     const cx = LAYOUT.GAME_WIDTH / 2;
-    this.add.rectangle(cx, LAYOUT.GAME_HEIGHT / 2, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
+    addStageBackground(this, UI_COPY.placement.title);
 
-    this.add.text(cx, 30, '폰 배치 (4개)', {
-      fontSize: '22px', color: '#ffffff',
+    this.add.text(cx, 132, UI_COPY.placement.subtitle, {
+      fontSize: '16px',
+      color: TEXT_COLORS.MUTED,
     }).setOrigin(0.5);
 
-    this.add.text(cx, 60, '아래 2행에 폰을 배치하세요', {
-      fontSize: '16px', color: '#aaaaaa',
+    this.countText = this.add.text(cx, 164, `${UI_COPY.placement.count}: 0 / ${PAWN_COUNT}`, {
+      fontSize: '16px',
+      color: TEXT_COLORS.GOLD,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this._drawBoard();
 
-    const cx2 = LAYOUT.GAME_WIDTH / 2;
-    this.readyBtn = this.add.rectangle(cx2, 540, 180, 46, 0x555555).setInteractive();
-    this.readyText = this.add.text(cx2, 540, '준비 완료', {
-      fontSize: '20px', color: '#888888',
-    }).setOrigin(0.5);
-
-    this._randomizePawns();
-
-    this.readyBtn.on('pointerdown', () => {
+    this.readyButton = addTextButton(this, cx, 545, 190, 48, UI_COPY.placement.ready, { enabled: false });
+    this.readyButton.rect.on('pointerdown', () => {
       if (this.pawnCount < PAWN_COUNT) return;
       this._startGame();
     });
+
+    this._randomizePawns();
   }
 
   _drawBoard() {
     this.cellGraphics = {};
+    const boardX = LAYOUT.BOARD_OFFSET_X + 120;
+    const boardY = 185;
+    const cellSize = 64;
+    const frame = this.add.graphics();
+    frame.fillStyle(COLORS.BOARD_FRAME, 1);
+    frame.fillRoundedRect(boardX - 12, boardY - 12, cellSize * 5 + 24, cellSize * 5 + 24, 8);
+    frame.lineStyle(2, COLORS.PANEL_EDGE, 0.8);
+    frame.strokeRoundedRect(boardX - 12, boardY - 12, cellSize * 5 + 24, cellSize * 5 + 24, 8);
+
     for (let r = 0; r < 5; r++) {
       for (let c = 0; c < 5; c++) {
-        const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
-        const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
+        const x = boardX + c * cellSize + cellSize / 2;
+        const y = boardY + r * cellSize + cellSize / 2;
         const isLight = (r + c) % 2 === 0;
-        const cell = this.add.rectangle(x, y, LAYOUT.CELL_SIZE - 2, LAYOUT.CELL_SIZE - 2,
+        const cell = this.add.rectangle(x, y, cellSize - 2, cellSize - 2,
           isLight ? COLORS.BOARD_LIGHT : COLORS.BOARD_DARK);
+        cell.setStrokeStyle(1, 0x2c1b12, 0.38);
 
         if (r === KING_ROW && c === KING_COL) {
-          this.add.text(x, y, 'K', { fontSize: '28px', color: '#2ecc71', fontStyle: 'bold' }).setOrigin(0.5);
+          this.add.text(x, y, '왕', { fontSize: '22px', color: TEXT_COLORS.SUCCESS, fontStyle: 'bold' }).setOrigin(0.5);
           continue;
         }
 
         if (r >= 3) {
-          cell.setInteractive();
-          cell.on('pointerover', () => { if (!this.placed[`${r},${c}`]) cell.setFillStyle(0xaaffaa); });
+          cell.setInteractive({ useHandCursor: true });
+          cell.on('pointerover', () => { if (!this.placed[`${r},${c}`]) cell.setFillStyle(0xc8e08a); });
           cell.on('pointerout', () => { if (!this.placed[`${r},${c}`]) cell.setFillStyle(isLight ? COLORS.BOARD_LIGHT : COLORS.BOARD_DARK); });
           cell.on('pointerdown', () => this._togglePawn(r, c, x, y, cell, isLight));
           this.cellGraphics[`${r},${c}`] = { cell, x, y, isLight, text: null };
@@ -85,10 +93,10 @@ export class PlacementScene extends Phaser.Scene {
       if (this.pawnCount >= PAWN_COUNT) return;
       this.placed[key] = true;
       this.pawnCount++;
-      this.cellGraphics[key].text = this.add.text(x, y, 'P', {
-        fontSize: '26px', color: '#4a90d9', fontStyle: 'bold',
+      this.cellGraphics[key].text = this.add.text(x, y, '병', {
+        fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       }).setOrigin(0.5);
-      cell.setFillStyle(0x4a90d9);
+      cell.setFillStyle(COLORS.EMERALD);
     }
     this._updateReadyButton();
   }
@@ -115,23 +123,21 @@ export class PlacementScene extends Phaser.Scene {
 
   _showTutorialPrompt(placements) {
     const cx = LAYOUT.GAME_WIDTH / 2, cy = LAYOUT.GAME_HEIGHT / 2;
-    this.add.rectangle(cx, cy, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
+    addStageBackground(this, '');
 
-    this.add.text(cx, cy - 60, '튜토리얼을 볼까요?', {
-      fontSize: '26px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(cx, cy - 62, UI_COPY.tutorialPrompt.title, {
+      fontSize: '28px', color: TEXT_COLORS.PRIMARY, fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(cx, cy - 20, '게임 방법을 단계별로 알려드립니다', {
-      fontSize: '16px', color: '#aaaaaa',
+    this.add.text(cx, cy - 24, UI_COPY.tutorialPrompt.body, {
+      fontSize: '16px', color: TEXT_COLORS.MUTED,
     }).setOrigin(0.5);
 
-    const yesBtn = this.add.rectangle(cx - 70, cy + 40, 120, 44, 0x2a8a4a).setInteractive();
-    this.add.text(cx - 70, cy + 40, '네', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
-    const noBtn = this.add.rectangle(cx + 70, cy + 40, 120, 44, 0x444466).setInteractive();
-    this.add.text(cx + 70, cy + 40, '아니오', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+    const yes = addTextButton(this, cx - 78, cy + 42, 130, 46, UI_COPY.tutorialPrompt.yes, { active: true });
+    const no = addTextButton(this, cx + 78, cy + 42, 130, 46, UI_COPY.tutorialPrompt.no);
 
-    yesBtn.on('pointerdown', () =>
+    yes.rect.on('pointerdown', () =>
       this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements, tutorialMode: true }));
-    noBtn.on('pointerdown', () =>
+    no.rect.on('pointerdown', () =>
       this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements }));
   }
 
@@ -163,7 +169,10 @@ export class PlacementScene extends Phaser.Scene {
 
   _updateReadyButton() {
     const ready = this.pawnCount >= PAWN_COUNT;
-    this.readyBtn.setFillStyle(ready ? 0x2a8a4a : 0x555555);
-    this.readyText.setColor(ready ? '#ffffff' : '#888888');
+    this.countText.setText(`${UI_COPY.placement.count}: ${this.pawnCount} / ${PAWN_COUNT}`);
+    this.readyButton.rect.setData('enabled', ready);
+    this.readyButton.rect.setFillStyle(ready ? COLORS.EMERALD : COLORS.BUTTON_DISABLED);
+    this.readyButton.rect.setAlpha(ready ? 1 : 0.5);
+    this.readyButton.text.setColor(ready ? TEXT_COLORS.PRIMARY : TEXT_COLORS.DIM);
   }
 }

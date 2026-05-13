@@ -1,36 +1,42 @@
 // src/scenes/MenuScene.js
-import { LAYOUT, COLORS, Difficulty } from '../config.js';
+import { LAYOUT, Difficulty, TEXT_COLORS } from '../config.js';
+import { addStageBackground, addTextButton, UI_COPY } from '../ui/visuals.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
 
   create() {
     const cx = LAYOUT.GAME_WIDTH / 2;
-    this.add.rectangle(cx, LAYOUT.GAME_HEIGHT / 2, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
+    addStageBackground(this, UI_COPY.menu.title);
 
-    this.add.text(cx, 120, 'Chess Summon', {
-      fontSize: '48px', color: '#ffffff', fontStyle: 'bold',
+    this.add.text(cx, 148, '5x5 전술판 위에서 병사를 소환해 왕을 무너뜨리세요', {
+      fontSize: '16px',
+      color: TEXT_COLORS.MUTED,
     }).setOrigin(0.5);
 
-    this.add.text(cx, 200, '난이도를 선택하세요', {
-      fontSize: '24px', color: '#aaaaaa',
+    this.add.text(cx, 215, UI_COPY.menu.subtitle, {
+      fontSize: '22px',
+      color: TEXT_COLORS.GOLD,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const difficulties = [
-      { label: '쉬움', value: Difficulty.EASY, y: 300 },
-      { label: '보통', value: Difficulty.MEDIUM, y: 380 },
-      { label: '어려움', value: Difficulty.HARD, y: 460 },
+      { value: Difficulty.EASY, y: 300 },
+      { value: Difficulty.MEDIUM, y: 380 },
+      { value: Difficulty.HARD, y: 460 },
     ];
 
-    for (const { label, value, y } of difficulties) {
-      const btn = this.add.rectangle(cx, y, 200, 50, COLORS.BUTTON_BG).setInteractive();
-      this.add.text(cx, y, label, { fontSize: '22px', color: '#ffffff' }).setOrigin(0.5);
-      btn.on('pointerover', () => btn.setFillStyle(COLORS.BUTTON_HOVER));
-      btn.on('pointerout', () => btn.setFillStyle(COLORS.BUTTON_BG));
-      btn.on('pointerdown', () => {
+    for (const { value, y } of difficulties) {
+      const label = UI_COPY.menu.difficulties[value];
+      const hint = UI_COPY.menu.difficultyHints[value];
+      const button = addTextButton(this, cx, y, 230, 54, label, { fontSize: '21px' });
+      this.add.text(cx, y + 36, hint, {
+        fontSize: '12px',
+        color: TEXT_COLORS.MUTED,
+      }).setOrigin(0.5);
+      button.rect.on('pointerdown', () => {
         this.scene.start('Placement', { difficulty: value });
       });
     }
   }
-
 }

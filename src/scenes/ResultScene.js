@@ -1,5 +1,6 @@
 // src/scenes/ResultScene.js
-import { LAYOUT, COLORS, TEXT_COLORS, Owner } from '../config.js';
+import { LAYOUT, TEXT_COLORS, Owner } from '../config.js';
+import { addStageBackground, addTextButton, UI_COPY } from '../ui/visuals.js';
 
 export class ResultScene extends Phaser.Scene {
   constructor() { super('Result'); }
@@ -11,30 +12,24 @@ export class ResultScene extends Phaser.Scene {
 
   create() {
     const cx = LAYOUT.GAME_WIDTH / 2;
-    this.add.rectangle(cx, LAYOUT.GAME_HEIGHT / 2, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
+    const playerWon = this.winner === Owner.PLAYER;
+    addStageBackground(this, playerWon ? UI_COPY.result.win : UI_COPY.result.lose);
 
-    const msg = this.winner === Owner.PLAYER ? '승리!' : '패배...';
-    const color = this.winner === Owner.PLAYER ? TEXT_COLORS.KING_PLAYER : TEXT_COLORS.AI_PIECE;
-    this.add.text(cx, 180, msg, {
-      fontSize: '64px', color, fontStyle: 'bold',
+    this.add.text(cx, 165, playerWon ? '왕좌를 지켜냈습니다' : '왕좌를 빼앗겼습니다', {
+      fontSize: '18px',
+      color: playerWon ? TEXT_COLORS.SUCCESS : TEXT_COLORS.DANGER,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const replayBtn = this.add.rectangle(cx, 320, 200, 52, COLORS.BUTTON_BG).setInteractive();
-    this.add.text(cx, 320, '다시하기', { fontSize: '22px', color: TEXT_COLORS.PRIMARY }).setOrigin(0.5);
-    replayBtn.on('pointerover', () => replayBtn.setFillStyle(COLORS.BUTTON_HOVER));
-    replayBtn.on('pointerout', () => replayBtn.setFillStyle(COLORS.BUTTON_BG));
-    replayBtn.on('pointerdown', () => {
+    const replay = addTextButton(this, cx, 320, 220, 54, UI_COPY.result.replay);
+    replay.rect.on('pointerdown', () => {
       this.scene.start('Placement', { difficulty: this.difficulty });
     });
 
-    const menuBtn = this.add.rectangle(cx, 390, 200, 52, COLORS.BUTTON_BG).setInteractive();
-    this.add.text(cx, 390, '메인 메뉴', { fontSize: '22px', color: TEXT_COLORS.PRIMARY }).setOrigin(0.5);
-    menuBtn.on('pointerover', () => menuBtn.setFillStyle(COLORS.BUTTON_HOVER));
-    menuBtn.on('pointerout', () => menuBtn.setFillStyle(COLORS.BUTTON_BG));
-    menuBtn.on('pointerdown', () => {
+    const menu = addTextButton(this, cx, 390, 220, 54, UI_COPY.result.menu);
+    menu.rect.on('pointerdown', () => {
       this.scene.stop('UI');
       this.scene.start('Menu');
     });
   }
-
 }

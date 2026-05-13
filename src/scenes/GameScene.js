@@ -9,6 +9,7 @@ import {
   PieceType, Owner, COLORS, LAYOUT, MANA_PER_TURN, TURN_TIME_LIMIT,
   AI_THINK_DELAY, BOARD_SIZE,
 } from '../config.js';
+import { UI_COPY } from '../ui/visuals.js';
 
 const State = {
   WAITING: 'WAITING',
@@ -18,7 +19,7 @@ const State = {
   GAME_OVER: 'GAME_OVER',
 };
 
-const PIECE_TYPES = ['pawn','knight','bishop','rook','queen','king'];
+const PIECE_TYPES = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
 
 export class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
@@ -56,6 +57,7 @@ export class GameScene extends Phaser.Scene {
     this.checkRing = null;
     this.summonedCells = new Set();
 
+    this._drawStage();
     this._setupBoard();
     this._drawBoard();
     const boardCX = LAYOUT.BOARD_OFFSET_X + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
@@ -72,6 +74,22 @@ export class GameScene extends Phaser.Scene {
     if (this.tutorialMode) this.scene.launch('Tutorial');
   }
 
+  _drawStage() {
+    this.add.rectangle(LAYOUT.GAME_WIDTH / 2, LAYOUT.GAME_HEIGHT / 2, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.BACKDROP);
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.PANEL_BG, 0.86);
+    g.fillRect(0, 0, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT);
+    g.fillStyle(COLORS.PANEL_DEEP, 0.78);
+    g.fillRoundedRect(LAYOUT.BOARD_OFFSET_X - 22, LAYOUT.BOARD_OFFSET_Y - 22,
+      BOARD_SIZE * LAYOUT.CELL_SIZE + 44, BOARD_SIZE * LAYOUT.CELL_SIZE + 44, 10);
+    g.lineStyle(3, COLORS.PANEL_EDGE, 0.74);
+    g.strokeRoundedRect(LAYOUT.BOARD_OFFSET_X - 22, LAYOUT.BOARD_OFFSET_Y - 22,
+      BOARD_SIZE * LAYOUT.CELL_SIZE + 44, BOARD_SIZE * LAYOUT.CELL_SIZE + 44, 10);
+    g.lineStyle(1, COLORS.GOLD, 0.25);
+    g.strokeRoundedRect(LAYOUT.BOARD_OFFSET_X - 11, LAYOUT.BOARD_OFFSET_Y - 11,
+      BOARD_SIZE * LAYOUT.CELL_SIZE + 22, BOARD_SIZE * LAYOUT.CELL_SIZE + 22, 4);
+  }
+
   _setupBoard() {
     this.board.setPiece(0, 2, new Piece(PieceType.KING, Owner.AI));
     this.board.setPiece(1, 0, new Piece(PieceType.PAWN, Owner.AI));
@@ -84,14 +102,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   _drawBoard() {
-    for (let r = 0; r < 5; r++)
-      for (let c = 0; c < 5; c++) {
+    for (let r = 0; r < BOARD_SIZE; r++)
+      for (let c = 0; c < BOARD_SIZE; c++) {
         const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
         const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
         const isLight = (r + c) % 2 === 0;
         const cell = this.add.rectangle(x, y, LAYOUT.CELL_SIZE - 2, LAYOUT.CELL_SIZE - 2,
           isLight ? COLORS.BOARD_LIGHT : COLORS.BOARD_DARK);
-        cell.setInteractive();
+        cell.setStrokeStyle(1, 0x2e2118, 0.45);
+        cell.setInteractive({ useHandCursor: true });
         cell.on('pointerdown', () => this._onCellClick(r, c));
       }
   }
@@ -119,20 +138,16 @@ export class GameScene extends Phaser.Scene {
       for (let c = 0; c < BOARD_SIZE; c++) {
         const piece = this.board.getPiece(r, c);
         if (!piece || piece.owner !== Owner.PLAYER) continue;
-        // 자신의 위치
         visible.add(`${r},${c}`);
-        // 인접 1칸
         for (let dr = -1; dr <= 1; dr++)
           for (let dc = -1; dc <= 1; dc++) {
             const nr = r + dr, nc = c + dc;
             if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE)
               visible.add(`${nr},${nc}`);
           }
-        // 이동 가능한 모든 경로
         const moves = this.calc.getMoves(this.board, r, c);
         for (const m of moves) visible.add(`${m.row},${m.col}`);
       }
-    // 체크를 거는 적 기물은 항상 보임
     const threats = this.detector.getThreats(this.board, Owner.PLAYER);
     for (const t of threats) visible.add(`${t.row},${t.col}`);
     return visible;
@@ -148,8 +163,12 @@ export class GameScene extends Phaser.Scene {
           const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE;
           const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE;
           const g = this.add.graphics();
-          g.fillStyle(0x000000, 1);
+          g.fillStyle(0x030711, 0.86);
           g.fillRect(x, y, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+          g.fillStyle(0x1b2540, 0.18);
+          g.fillCircle(x + LAYOUT.CELL_SIZE / 2, y + LAYOUT.CELL_SIZE / 2, 23);
+          g.lineStyle(1, COLORS.PANEL_EDGE, 0.15);
+          g.strokeRect(x + 2, y + 2, LAYOUT.CELL_SIZE - 4, LAYOUT.CELL_SIZE - 4);
           g.setDepth(2);
           this.fogGraphics.push(g);
         }
@@ -160,10 +179,14 @@ export class GameScene extends Phaser.Scene {
     const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
+    const shadow = this.add.ellipse(x + 2, y + 28, 48, 15, 0x000000, 0.34).setDepth(3);
     const obj = this.add.image(x, y, key)
-      .setDisplaySize(144, 144)
+      .setDisplaySize(158, 158)
       .setDepth(4);
-    this.pieceObjects[`${r},${c}`] = obj;
+    this.pieceObjects[`${r},${c}`] = {
+      destroy: () => { shadow.destroy(); obj.destroy(); },
+      setVisible: visible => { shadow.setVisible(visible); obj.setVisible(visible); },
+    };
   }
 
   _clearHighlights() {
@@ -177,7 +200,9 @@ export class GameScene extends Phaser.Scene {
       const y = LAYOUT.BOARD_OFFSET_Y + row * LAYOUT.CELL_SIZE;
       const g = this.add.graphics();
       g.fillStyle(color, alpha);
-      g.fillRect(x, y, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+      g.fillRoundedRect(x + 4, y + 4, LAYOUT.CELL_SIZE - 8, LAYOUT.CELL_SIZE - 8, 6);
+      g.lineStyle(2, color, Math.min(1, alpha + 0.25));
+      g.strokeRoundedRect(x + 5, y + 5, LAYOUT.CELL_SIZE - 10, LAYOUT.CELL_SIZE - 10, 6);
       g.setDepth(3);
       this.highlightGraphics.push(g);
     }
@@ -215,6 +240,8 @@ export class GameScene extends Phaser.Scene {
       this._clearHighlights();
       this.state = State.WAITING;
       this.pendingSummonType = null;
+      this._showMovablePieces();
+      this.events.emit('summon-cancel');
       return;
     }
 
@@ -287,20 +314,19 @@ export class GameScene extends Phaser.Scene {
       const cx = LAYOUT.BOARD_OFFSET_X + tc * LAYOUT.CELL_SIZE;
       const cy = LAYOUT.BOARD_OFFSET_Y + tr * LAYOUT.CELL_SIZE;
       const flash = this.add.graphics();
-      flash.fillStyle(0xff2200, 0.9);
-      flash.fillRect(cx, cy, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+      flash.fillStyle(COLORS.THREAT, 0.82);
+      flash.fillRoundedRect(cx + 4, cy + 4, LAYOUT.CELL_SIZE - 8, LAYOUT.CELL_SIZE - 8, 6);
       flash.setDepth(6);
       this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
     }
 
     if (!piece) { callback(); return; }
-
     const origObj = this.pieceObjects[`${fr},${fc}`];
     if (origObj) origObj.setVisible(false);
 
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
     const animPiece = this.add.image(fromX, fromY, key)
-      .setDisplaySize(144, 144)
+      .setDisplaySize(158, 158)
       .setDepth(6);
 
     this.tweens.add({
@@ -320,26 +346,26 @@ export class GameScene extends Phaser.Scene {
     const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const flash = this.add.graphics();
-    flash.fillStyle(0xffdd00, 0.9);
+    flash.fillStyle(COLORS.GOLD, 0.92);
     flash.fillCircle(x, y, LAYOUT.CELL_SIZE / 2);
+    flash.lineStyle(3, 0xffffff, 0.8);
+    flash.strokeCircle(x, y, LAYOUT.CELL_SIZE / 2 + 4);
     flash.setDepth(6);
-    this.tweens.add({ targets: flash, alpha: 0, scaleX: 2, scaleY: 2, duration: 400, onComplete: () => flash.destroy() });
+    this.tweens.add({ targets: flash, alpha: 0, scaleX: 2, scaleY: 2, duration: 420, onComplete: () => flash.destroy() });
   }
 
   _animateCheck() {
     const kingPos = this.board.findKing(Owner.PLAYER);
     if (!kingPos) return;
-    // 킹 셀에 빨간 테두리 표시
     if (this.checkRing) { this.checkRing.destroy(); this.checkRing = null; }
     const x = LAYOUT.BOARD_OFFSET_X + kingPos.col * LAYOUT.CELL_SIZE;
     const y = LAYOUT.BOARD_OFFSET_Y + kingPos.row * LAYOUT.CELL_SIZE;
     const ring = this.add.graphics();
-    ring.lineStyle(4, 0xff2200, 1);
-    ring.strokeRect(x + 2, y + 2, LAYOUT.CELL_SIZE - 4, LAYOUT.CELL_SIZE - 4);
+    ring.lineStyle(4, COLORS.THREAT, 1);
+    ring.strokeRoundedRect(x + 3, y + 3, LAYOUT.CELL_SIZE - 6, LAYOUT.CELL_SIZE - 6, 6);
     ring.setDepth(5);
     this.checkRing = ring;
-    // 테두리 깜빡임
-    this.tweens.add({ targets: ring, alpha: 0.3, duration: 300, yoyo: true, repeat: 3 });
+    this.tweens.add({ targets: ring, alpha: 0.25, duration: 300, yoyo: true, repeat: 3 });
   }
 
   _clearCheckRing() {
@@ -350,15 +376,15 @@ export class GameScene extends Phaser.Scene {
     const cx = LAYOUT.BOARD_OFFSET_X + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
     const cy = LAYOUT.BOARD_OFFSET_Y + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2;
     const isPlayer = owner === Owner.PLAYER;
-    const label = isPlayer ? '내 턴' : 'AI 턴';
-    const accentColor = isPlayer ? 0x2ecc71 : 0xff6b35;
+    const label = isPlayer ? UI_COPY.game.playerTurn : UI_COPY.game.aiTurn;
+    const accentColor = isPlayer ? COLORS.EMERALD : 0xff6b35;
     const bgColor = isPlayer ? 0x071a0f : 0x1a0707;
     const textColor = isPlayer ? '#2ecc71' : '#ff6b35';
 
-    const border = this.add.rectangle(cx, cy, 228, 78, accentColor).setDepth(10).setAlpha(0);
-    const bg = this.add.rectangle(cx, cy, 220, 70, bgColor).setDepth(10).setAlpha(0);
+    const border = this.add.rectangle(cx, cy, 242, 80, accentColor).setDepth(10).setAlpha(0);
+    const bg = this.add.rectangle(cx, cy, 232, 70, bgColor).setDepth(10).setAlpha(0);
     const txt = this.add.text(cx, cy, label, {
-      fontSize: '38px', color: textColor, fontStyle: 'bold',
+      fontSize: '34px', color: textColor, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11).setAlpha(0);
 
     const targets = [border, bg, txt];
@@ -391,7 +417,7 @@ export class GameScene extends Phaser.Scene {
           if (moves.length > 0) movable.push({ row: r, col: c });
         }
       }
-    this._highlightCells(movable, COLORS.MOVABLE_PIECE, 0.35);
+    this._highlightCells(movable, COLORS.MOVABLE_PIECE, 0.32);
   }
 
   _showThreatsIfInCheck() {
@@ -425,9 +451,7 @@ export class GameScene extends Phaser.Scene {
     this.pendingSummonType = null;
 
     if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
-
     this._showTurnBanner(owner);
-
     this.events.emit('turn-start', {
       turn: owner,
       mana: this.board.mana,
@@ -437,7 +461,7 @@ export class GameScene extends Phaser.Scene {
 
     if (owner === Owner.AI) {
       this.state = State.AI_TURN;
-      this.aiOverlay.setAlpha(0.28);
+      this.aiOverlay.setAlpha(0.25);
       this.time.delayedCall(AI_THINK_DELAY, this._doAITurn, [], this);
     } else {
       this.aiOverlay.setAlpha(0);
@@ -458,7 +482,6 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('timer-tick', this.timeLeft);
     if (this.timeLeft <= 0) {
       if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
-      // 애니메이션 중이면 애니메이션 콜백이 끝난 뒤 endTurn 처리
       if (this.board.currentTurn === Owner.PLAYER && !this.animating) this._endTurn();
     }
   }
@@ -490,8 +513,8 @@ export class GameScene extends Phaser.Scene {
         const cx = LAYOUT.BOARD_OFFSET_X + moveAction.to.col * LAYOUT.CELL_SIZE;
         const cy = LAYOUT.BOARD_OFFSET_Y + moveAction.to.row * LAYOUT.CELL_SIZE;
         const flash = this.add.graphics();
-        flash.fillStyle(0xff2200, 0.9);
-        flash.fillRect(cx, cy, LAYOUT.CELL_SIZE, LAYOUT.CELL_SIZE);
+        flash.fillStyle(COLORS.THREAT, 0.86);
+        flash.fillRoundedRect(cx + 4, cy + 4, LAYOUT.CELL_SIZE - 8, LAYOUT.CELL_SIZE - 8, 6);
         flash.setDepth(6);
         this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
       }
@@ -541,7 +564,6 @@ export class GameScene extends Phaser.Scene {
   startSummonMode(pieceType) {
     if (this.tutorialLocked) return;
     if (this.hasSummoned) return;
-    // 같은 버튼 → 취소
     if (this.state === State.SUMMON_MODE && this.pendingSummonType === pieceType) {
       this._clearHighlights();
       this.pendingSummonType = null;
