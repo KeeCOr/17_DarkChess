@@ -7,7 +7,7 @@ import { SummonSystem } from '../game/SummonSystem.js';
 import { AIController } from '../game/AIController.js';
 import {
   PieceType, Owner, COLORS, LAYOUT, MANA_PER_TURN, TURN_TIME_LIMIT,
-  AI_THINK_DELAY, PIECE_LABELS, TEXT_COLORS, BOARD_SIZE,
+  AI_THINK_DELAY, BOARD_SIZE,
 } from '../config.js';
 
 const State = {
@@ -18,8 +18,17 @@ const State = {
   GAME_OVER: 'GAME_OVER',
 };
 
+const PIECE_TYPES = ['pawn','knight','bishop','rook','queen','king'];
+
 export class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
+
+  preload() {
+    for (const t of PIECE_TYPES) {
+      this.load.image(`${t}_w`, `assets/pieces/${t}_w.png`);
+      this.load.image(`${t}_d`, `assets/pieces/${t}_d.png`);
+    }
+  }
 
   init(data) {
     this.difficulty = data.difficulty;
@@ -147,13 +156,10 @@ export class GameScene extends Phaser.Scene {
   _renderPiece(r, c, piece) {
     const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
-    const isKing = piece.type === PieceType.KING;
-    const color = isKing
-      ? (piece.owner === Owner.PLAYER ? TEXT_COLORS.KING_PLAYER : TEXT_COLORS.KING_AI)
-      : (piece.owner === Owner.PLAYER ? TEXT_COLORS.PLAYER_PIECE : TEXT_COLORS.AI_PIECE);
-    const obj = this.add.text(x, y, PIECE_LABELS[piece.type], {
-      fontSize: isKing ? '30px' : '26px', color, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(4);
+    const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
+    const obj = this.add.image(x, y, key)
+      .setDisplaySize(72, 72)
+      .setDepth(4);
     this.pieceObjects[`${r},${c}`] = obj;
   }
 
@@ -274,17 +280,13 @@ export class GameScene extends Phaser.Scene {
 
     if (!piece) { callback(); return; }
 
-    const isKing = piece.type === PieceType.KING;
-    const color = isKing
-      ? (piece.owner === Owner.PLAYER ? TEXT_COLORS.KING_PLAYER : TEXT_COLORS.KING_AI)
-      : (piece.owner === Owner.PLAYER ? TEXT_COLORS.PLAYER_PIECE : TEXT_COLORS.AI_PIECE);
-
     const origObj = this.pieceObjects[`${fr},${fc}`];
     if (origObj) origObj.setVisible(false);
 
-    const animPiece = this.add.text(fromX, fromY, PIECE_LABELS[piece.type], {
-      fontSize: isKing ? '30px' : '26px', color, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(6);
+    const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
+    const animPiece = this.add.image(fromX, fromY, key)
+      .setDisplaySize(72, 72)
+      .setDepth(6);
 
     this.tweens.add({
       targets: animPiece,
