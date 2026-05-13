@@ -230,6 +230,7 @@
   <div class="meta">
     <span>버전: 0.1.0</span>
     <span>작성일: 2026-05-12</span>
+    <span>최종 수정: 2026-05-13</span>
     <span>장르: 턴제 전략</span>
   </div>
 </header>
@@ -433,9 +434,9 @@
 <div class="flow" style="flex-direction:column;align-items:flex-start;">
   <div class="flow-box" style="min-width:240px">메인 메뉴 (난이도 선택)</div>
   <div class="flow-arrow">↓</div>
-  <div class="flow-box" style="min-width:240px">배치 페이즈<br><small style="color:var(--text-muted)">어려움만 / 쉬움·보통은 자동 처리</small></div>
-  <div class="flow-arrow">↓</div>
-  <div class="flow-box" style="min-width:240px">게임 (보드 + HUD 오버레이)</div>
+  <div class="flow-box" style="min-width:280px">배치 페이즈<br><small style="color:var(--text-muted)">어려움만 / 쉬움·보통은 자동 처리</small></div>
+  <div class="flow-arrow">↓ <small style="color:var(--text-muted)">[쉬움] "튜토리얼을 볼까요?" 팝업</small></div>
+  <div class="flow-box" style="min-width:280px">게임 (보드 + HUD 오버레이)<br><small style="color:var(--text-muted)">+ tutorialMode 시 TutorialScene 병렬 실행</small></div>
   <div class="flow-arrow">↓</div>
   <div class="flow-box" style="min-width:240px">결과 화면 (승 / 패)</div>
   <div class="flow-arrow">↓</div>
@@ -452,10 +453,10 @@
   <tr><td>타이머</td><td>60초 카운트다운 (10초 이하: 빨간색)</td></tr>
   <tr><td>마나</td><td>현재 마나 / 최대(10)</td></tr>
   <tr><td>행동 현황</td><td>○/✓ 이동 &nbsp;&nbsp; ○/✓ 소환 (완료 시 초록색 체크)</td></tr>
-  <tr><td>소환 버튼 5개</td><td>마나 부족·이미 소환 시 비활성 / 활성 시 주황 하이라이트</td></tr>
+  <tr><td>소환 버튼 5개</td><td>말 아이콘 + 마나 비용 숫자 / 마나 부족·이미 소환 시 비활성 / 활성 시 주황 하이라이트</td></tr>
   <tr><td>체크 경고</td><td>⚠ 체크! 텍스트 (체크 상태 시만 표시)</td></tr>
   <tr><td>턴 종료 버튼</td><td>수동 턴 종료</td></tr>
-  <tr><td>기권 버튼</td><td>즉시 패배 처리</td></tr>
+  <tr><td>기권 버튼</td><td>클릭 시 확인 팝업 → "기권" 선택 시 즉시 패배 처리</td></tr>
 </table>
 
 <h3>보드 시각 피드백</h3>
@@ -498,8 +499,37 @@
   </ul>
 </div>
 
-<!-- 5. AI -->
-<h2>5. AI 시스템</h2>
+<!-- 5. 튜토리얼 -->
+<h2>5. 튜토리얼 시스템</h2>
+
+<div class="card highlight">
+  <p>쉬움 난이도 시작 시 선택적으로 진입하는 인게임 튜토리얼. GameScene 위에 TutorialScene 오버레이로 실행되며 6단계 실습을 안내한다.</p>
+</div>
+
+<h3>6단계 미션</h3>
+<table>
+  <tr><th>단계</th><th>안내 텍스트</th><th>완료 조건</th></tr>
+  <tr><td>1</td><td>폰을 클릭해보세요</td><td>말 선택</td></tr>
+  <tr><td>2</td><td>이동할 칸을 선택하세요</td><td>이동 완료</td></tr>
+  <tr><td>3</td><td>마나 +2! 소환 버튼을 눌러보세요</td><td>소환 버튼 클릭</td></tr>
+  <tr><td>4</td><td>왕 주변 빈 칸을 클릭해 소환하세요</td><td>소환 완료</td></tr>
+  <tr><td>5</td><td>턴 종료 버튼을 눌러 AI에게 턴을 넘기세요</td><td>턴 종료</td></tr>
+  <tr><td>6</td><td>튜토리얼 완료! 자유롭게 플레이하세요</td><td>"확인" 버튼 클릭</td></tr>
+</table>
+
+<h3>시각 연출</h3>
+<div class="card">
+  <ul>
+    <li>전체 화면 반투명 오버레이 (depth 20)</li>
+    <li>현재 단계의 관련 UI 영역에 주황 테두리 점멸</li>
+    <li>텍스트 박스: 어두운 배경 (#1a1a2e) + 주황 테두리 (#ffaa00)</li>
+    <li>진행 점(5개): 완료=주황, 현재=흰색, 미완=회색</li>
+    <li>체크 발생 시 "체크! 이동으로 왕의 위협을 피하세요." 힌트 3초 팝업</li>
+  </ul>
+</div>
+
+<!-- 6. AI -->
+<h2>6. AI 시스템</h2>
 
 <table class="ai-table">
   <tr><th>난이도</th><th>배치</th><th>이동 전략</th><th>소환 전략</th></tr>
@@ -533,8 +563,8 @@
 </div>
 <blockquote>5×5 보드 특성상 탐색 깊이 3으로도 충분히 강한 AI 구현 가능</blockquote>
 
-<!-- 6. 밸런스 -->
-<h2>6. 밸런스</h2>
+<!-- 7. 밸런스 -->
+<h2>7. 밸런스</h2>
 
 <div class="grid grid-3">
   <div class="card">
@@ -566,8 +596,8 @@
   </ul>
 </div>
 
-<!-- 7. 배포 -->
-<h2>7. 배포</h2>
+<!-- 8. 배포 -->
+<h2>8. 배포</h2>
 
 <table>
   <tr><th>형태</th><th>파일명</th><th>비고</th></tr>
@@ -583,8 +613,8 @@
   </tr>
 </table>
 
-<!-- 8. 향후 계획 -->
-<h2>8. MVP 범위 외 (향후 구현)</h2>
+<!-- 9. 향후 계획 -->
+<h2>9. MVP 범위 외 (향후 구현)</h2>
 
 <table>
   <tr><th>기능</th><th>우선순위</th></tr>
@@ -595,11 +625,12 @@
   <tr><td>턴 전환 연출 강화</td><td class="priority-mid">중간</td></tr>
   <tr><td>랭킹 / 전적 시스템</td><td class="priority-low">낮음</td></tr>
   <tr><td>커스텀 보드 크기</td><td class="priority-low">낮음</td></tr>
-  <tr><td>캠페인 / 튜토리얼</td><td class="priority-low">낮음</td></tr>
+  <tr><td>튜토리얼 진행 상태 저장 (로컬스토리지)</td><td class="priority-low">낮음</td></tr>
+  <tr><td>캠페인 모드</td><td class="priority-low">낮음</td></tr>
 </table>
 
 <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);color:var(--text-muted);font-size:12px;text-align:center;">
-  Chess Summon v0.1.0 기획서 · 2026-05-12
+  Chess Summon v0.1.0 기획서 · 2026-05-13
 </div>
 
 </div>
