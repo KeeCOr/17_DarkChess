@@ -31,24 +31,55 @@ export const UI_COPY = Object.freeze({
     playerTurn: '내 턴',
     aiTurn: 'AI 턴',
     mana: '마나',
-    action: '행동 현황',
-    moveReady: '이동 가능',
-    moveDone: '이동 완료',
-    summonReady: '소환 가능',
-    summonDone: '소환 완료',
-    summon: '소환',
+    manaIconLabel: '마나',
+    action: '이번 턴 행동',
+    moveSlot: '이동 1회',
+    summonSlot: '소환 1회',
+    turnRule: '이동 1회 + 소환 1회',
+    turnRuleSub: '둘 다 사용하면 턴 종료',
+    moveReady: '가능',
+    moveDone: '완료',
+    summonReady: '가능',
+    summonDone: '완료',
+    summon: '소환 카드',
+    summonHint: '아군 주변 빈 칸',
     endTurn: '턴 종료',
     surrender: '기권',
+    help: '?',
     check: '체크!',
     confirmSurrender: '정말 기권하시겠습니까?',
     cancel: '취소',
+    cost: '',
+    notEnoughMana: '마나 부족',
+    selected: '선택',
+  },
+  hints: {
+    default: '말을 선택해 이동하거나, 소환 카드를 선택하세요',
+    selected: '밝은 칸으로 이동하면 새 시야가 열립니다',
+    summon: '초록 칸을 클릭하면 선택한 말을 소환합니다',
+    moveRemaining: '소환 완료. 아직 이동 1회를 사용할 수 있습니다',
+    summonRemaining: '이동 완료. 아직 소환 1회를 사용할 수 있습니다',
+    done: '이번 턴 행동 완료. 턴 종료를 누르세요',
+    ai: 'AI가 수를 계산하고 있습니다',
+  },
+  help: {
+    title: '전투 도움말',
+    lines: [
+      '한 턴에는 이동 1회와 소환 1회를 각각 사용할 수 있습니다.',
+      '소환은 아군 말 주변 8칸 중 빈 칸에만 가능합니다.',
+      '말을 선택하면 이동 가능한 칸이 밝게 표시됩니다.',
+      '시야는 내 말 주변 1칸, 이동 가능한 경로, 체크 위협 말이 밝혀집니다.',
+      '두 행동을 모두 사용했다면 턴 종료를 누르세요.',
+    ],
+    close: '확인',
   },
   tutorial: {
     steps: [
       '병사를 클릭해보세요',
-      '이동할 칸을 선택하세요',
-      '마나 +2!\n소환 버튼을 눌러보세요',
-      '아군 주변 빈 칸을 클릭해\n소환하세요',
+      '이동할 칸을 선택하세요\n이동하면 새 시야가 열립니다',
+      '마나 +2!\n소환 카드는 턴마다 1번 사용할 수 있습니다',
+      '아군 주변 초록 칸을 클릭해\n소환하세요',
+      '한 턴에는 이동 1회와 소환 1회가 가능합니다',
       '턴 종료 버튼을 눌러\nAI에게 턴을 넘겨보세요',
       '튜토리얼 완료!\n자유롭게 플레이하세요',
     ],
@@ -73,6 +104,16 @@ export function getPieceName(type) {
     [PieceType.QUEEN]: '여왕',
     [PieceType.KING]: '왕',
   }[type] || type;
+}
+
+export function getTurnHint({ hasMoved = false, hasSummoned = false, mode = 'default' } = {}) {
+  if (mode === 'ai') return UI_COPY.hints.ai;
+  if (mode === 'selected') return UI_COPY.hints.selected;
+  if (mode === 'summon') return UI_COPY.hints.summon;
+  if (hasMoved && hasSummoned) return UI_COPY.hints.done;
+  if (hasMoved) return UI_COPY.hints.summonRemaining;
+  if (hasSummoned) return UI_COPY.hints.moveRemaining;
+  return UI_COPY.hints.default;
 }
 
 export function getButtonColors({ enabled = true, active = false, danger = false } = {}) {
@@ -123,10 +164,10 @@ export function addPanel(scene, x, y, width, height, options = {}) {
   const depth = options.depth ?? 0;
   const alpha = options.alpha ?? 0.96;
   const g = scene.add.graphics().setDepth(depth);
-  g.fillStyle(COLORS.PANEL_DEEP, alpha);
-  g.fillRoundedRect(x, y, width, height, 8);
-  g.lineStyle(2, options.stroke ?? COLORS.PANEL_EDGE, options.strokeAlpha ?? 0.65);
-  g.strokeRoundedRect(x, y, width, height, 8);
+  g.fillStyle(options.fill ?? COLORS.PANEL_DEEP, alpha);
+  g.fillRoundedRect(x, y, width, height, options.radius ?? 8);
+  g.lineStyle(options.lineWidth ?? 2, options.stroke ?? COLORS.PANEL_EDGE, options.strokeAlpha ?? 0.65);
+  g.strokeRoundedRect(x, y, width, height, options.radius ?? 8);
   return g;
 }
 

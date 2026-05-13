@@ -10,7 +10,7 @@ const PANEL_X = LAYOUT.PANEL_X;
 
 const HIGHLIGHT_RECTS = {
   board: { x: BOARD_X - 10, y: BOARD_Y - 10, w: BOARD_W + 20, h: BOARD_H + 20 },
-  summonUI: { x: PANEL_X - 10, y: 236, w: 218, h: 254 },
+  summonUI: { x: PANEL_X - 10, y: 278, w: 218, h: 216 },
   endBtn: { x: PANEL_X - 8, y: 524, w: 198, h: 42 },
 };
 
@@ -19,8 +19,8 @@ const STEPS = [
   { text: UI_COPY.tutorial.steps[1], highlight: 'board', waitEvent: 'tutorial-piece-moved' },
   { text: UI_COPY.tutorial.steps[2], highlight: 'summonUI', waitEvent: 'tutorial-summon-clicked' },
   { text: UI_COPY.tutorial.steps[3], highlight: 'board', waitEvent: 'tutorial-summoned' },
-  { text: UI_COPY.tutorial.steps[4], highlight: 'endBtn', waitEvent: 'tutorial-turn-ended' },
-  { text: UI_COPY.tutorial.steps[5], highlight: null, waitEvent: null },
+  { text: UI_COPY.tutorial.steps[5], highlight: 'endBtn', waitEvent: 'tutorial-turn-ended' },
+  { text: UI_COPY.tutorial.steps[6], highlight: null, waitEvent: null },
 ];
 
 export class TutorialScene extends Phaser.Scene {

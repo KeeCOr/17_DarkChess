@@ -9,7 +9,7 @@ import {
   PieceType, Owner, COLORS, LAYOUT, MANA_PER_TURN, TURN_TIME_LIMIT,
   AI_THINK_DELAY, BOARD_SIZE,
 } from '../config.js';
-import { UI_COPY } from '../ui/visuals.js';
+import { getTurnHint, UI_COPY } from '../ui/visuals.js';
 
 const State = {
   WAITING: 'WAITING',
@@ -55,6 +55,8 @@ export class GameScene extends Phaser.Scene {
     this.fogGraphics = [];
     this.animating = false;
     this.checkRing = null;
+    this.hintText = null;
+    this.currentHintMode = 'default';
     this.summonedCells = new Set();
 
     this._drawStage();
@@ -88,6 +90,15 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(1, COLORS.GOLD, 0.25);
     g.strokeRoundedRect(LAYOUT.BOARD_OFFSET_X - 11, LAYOUT.BOARD_OFFSET_Y - 11,
       BOARD_SIZE * LAYOUT.CELL_SIZE + 22, BOARD_SIZE * LAYOUT.CELL_SIZE + 22, 4);
+
+    const hintY = LAYOUT.BOARD_OFFSET_Y + BOARD_SIZE * LAYOUT.CELL_SIZE + 50;
+    addHintFrame(this, LAYOUT.BOARD_OFFSET_X - 6, hintY - 18, BOARD_SIZE * LAYOUT.CELL_SIZE + 12, 38);
+    this.hintText = this.add.text(
+      LAYOUT.BOARD_OFFSET_X + (BOARD_SIZE * LAYOUT.CELL_SIZE) / 2,
+      hintY,
+      '',
+      { fontSize: '15px', color: '#ffffff', fontStyle: 'bold', align: 'center' },
+    ).setOrigin(0.5).setDepth(6);
   }
 
   _setupBoard() {
@@ -179,9 +190,16 @@ export class GameScene extends Phaser.Scene {
     const x = LAYOUT.BOARD_OFFSET_X + c * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const y = LAYOUT.BOARD_OFFSET_Y + r * LAYOUT.CELL_SIZE + LAYOUT.CELL_SIZE / 2;
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
-    const shadow = this.add.ellipse(x + 2, y + 28, 48, 15, 0x000000, 0.34).setDepth(3);
+    const shadow = this.add.ellipse(
+      x + 2,
+      y + LAYOUT.CELL_SIZE * 0.34,
+      LAYOUT.PIECE_SHADOW_WIDTH,
+      LAYOUT.PIECE_SHADOW_HEIGHT,
+      0x000000,
+      0.34,
+    ).setDepth(3);
     const obj = this.add.image(x, y, key)
-      .setDisplaySize(158, 158)
+      .setDisplaySize(LAYOUT.PIECE_SIZE, LAYOUT.PIECE_SIZE)
       .setDepth(4);
     this.pieceObjects[`${r},${c}`] = {
       destroy: () => { shadow.destroy(); obj.destroy(); },
@@ -241,6 +259,7 @@ export class GameScene extends Phaser.Scene {
       this.state = State.WAITING;
       this.pendingSummonType = null;
       this._showMovablePieces();
+      this._updateHint('default');
       this.events.emit('summon-cancel');
       return;
     }
@@ -252,6 +271,7 @@ export class GameScene extends Phaser.Scene {
         this.selectedCell = null;
         this._showMovablePieces();
         this._showThreatsIfInCheck();
+        this._updateHint('default');
         return;
       }
       const moves = this.calc.getMoves(this.board, this.selectedCell.row, this.selectedCell.col);
@@ -286,6 +306,7 @@ export class GameScene extends Phaser.Scene {
       this.selectedCell = null;
       this._showMovablePieces();
       this._showThreatsIfInCheck();
+      this._updateHint('default');
     }
 
     const piece = this.board.getPiece(r, c);
@@ -299,6 +320,7 @@ export class GameScene extends Phaser.Scene {
       this._highlightCells([{ row: r, col: c }], COLORS.SELECTED);
       this._highlightCells(moves, COLORS.MOVE_HIGHLIGHT);
       this._showThreatsIfInCheck();
+      this._updateHint('selected');
       if (this.tutorialMode) this.events.emit('tutorial-piece-selected');
     }
   }
@@ -326,7 +348,7 @@ export class GameScene extends Phaser.Scene {
 
     const key = `${piece.type.toLowerCase()}_${piece.owner === Owner.PLAYER ? 'w' : 'd'}`;
     const animPiece = this.add.image(fromX, fromY, key)
-      .setDisplaySize(158, 158)
+      .setDisplaySize(LAYOUT.PIECE_SIZE, LAYOUT.PIECE_SIZE)
       .setDepth(6);
 
     this.tweens.add({
@@ -432,7 +454,20 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _updateHint(mode = 'default') {
+    this.currentHintMode = mode;
+    if (!this.hintText) return;
+    const hint = getTurnHint({
+      hasMoved: this.hasMoved,
+      hasSummoned: this.hasSummoned,
+      mode,
+    });
+    this.hintText.setText(hint);
+    this.hintText.setColor(mode === 'summon' ? '#6fffe0' : (mode === 'ai' ? '#f7c84b' : '#ffffff'));
+  }
+
   _emitPlayerAction() {
+    this._updateHint('default');
     this.events.emit('player-action', {
       hasMoved: this.hasMoved,
       hasSummoned: this.hasSummoned,
@@ -462,6 +497,7 @@ export class GameScene extends Phaser.Scene {
     if (owner === Owner.AI) {
       this.state = State.AI_TURN;
       this.aiOverlay.setAlpha(0.25);
+      this._updateHint('ai');
       this.time.delayedCall(AI_THINK_DELAY, this._doAITurn, [], this);
     } else {
       this.aiOverlay.setAlpha(0);
@@ -474,6 +510,7 @@ export class GameScene extends Phaser.Scene {
       this.state = State.WAITING;
       this._showMovablePieces();
       this._showThreatsIfInCheck();
+      this._updateHint('default');
     }
   }
 
@@ -491,6 +528,7 @@ export class GameScene extends Phaser.Scene {
     this._clearHighlights();
     this.pendingSummonType = null;
     this.state = State.WAITING;
+    this._updateHint('ai');
     const next = this.board.currentTurn === Owner.PLAYER ? Owner.AI : Owner.PLAYER;
     this._startTurn(next);
   }
@@ -569,6 +607,7 @@ export class GameScene extends Phaser.Scene {
       this.pendingSummonType = null;
       this.state = State.WAITING;
       this._showMovablePieces();
+      this._updateHint('default');
       this.events.emit('summon-cancel');
       return;
     }
@@ -579,6 +618,8 @@ export class GameScene extends Phaser.Scene {
     this._clearHighlights();
     const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
     this._highlightCells(squares, COLORS.SUMMON_HIGHLIGHT);
+    this._updateHint('summon');
+    this.events.emit('summon-mode', { pieceType, hasMoved: this.hasMoved, hasSummoned: this.hasSummoned });
     if (this.tutorialMode) this.events.emit('tutorial-summon-clicked');
   }
 
@@ -608,4 +649,13 @@ export class GameScene extends Phaser.Scene {
   getMana() { return this.board.mana; }
   getCurrentTurn() { return this.board.currentTurn; }
   getSummonCounts() { return this.board.summonCounts[Owner.PLAYER]; }
+}
+
+function addHintFrame(scene, x, y, width, height) {
+  const g = scene.add.graphics().setDepth(5);
+  g.fillStyle(COLORS.PANEL_DEEP, 0.92);
+  g.fillRoundedRect(x, y, width, height, 8);
+  g.lineStyle(2, COLORS.PANEL_EDGE, 0.62);
+  g.strokeRoundedRect(x, y, width, height, 8);
+  return g;
 }
