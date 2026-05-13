@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   init(data) {
     this.difficulty = data.difficulty;
     this.playerPlacements = data.playerPlacements;
+    this.tutorialMode = data.tutorialMode || false;
   }
 
   create() {
@@ -64,9 +65,11 @@ export class GameScene extends Phaser.Scene {
       BOARD_SIZE * LAYOUT.CELL_SIZE, BOARD_SIZE * LAYOUT.CELL_SIZE,
       0x000000,
     ).setDepth(1).setAlpha(0);
+    this.tutorialLocked = false;
     this._refreshBoard();
     this.scene.launch('UI');
     this._startTurn(Owner.PLAYER);
+    if (this.tutorialMode) this.scene.launch('Tutorial');
   }
 
   _setupBoard() {
@@ -183,6 +186,7 @@ export class GameScene extends Phaser.Scene {
   _onCellClick(r, c) {
     if (this.state === State.AI_TURN || this.state === State.GAME_OVER) return;
     if (this.animating) return;
+    if (this.tutorialLocked) return;
 
     if (this.state === State.SUMMON_MODE) {
       const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
@@ -195,9 +199,14 @@ export class GameScene extends Phaser.Scene {
         this.pendingSummonType = null;
         this._refreshBoard();
         this._animateSummon(r, c);
+        if (this.tutorialMode) this.events.emit('tutorial-summoned');
         this._checkGameOver();
         if (this.state === State.GAME_OVER) return;
-        if (this.hasMoved) { this._endTurn(); return; }
+        if (this.hasMoved) {
+          if (!this.tutorialMode) { this._endTurn(); return; }
+          this._emitPlayerAction();
+          return;
+        }
         this._showMovablePieces();
         this._showThreatsIfInCheck();
         this._emitPlayerAction();
@@ -230,11 +239,16 @@ export class GameScene extends Phaser.Scene {
           this.animating = false;
           this.board.movePiece(fr, fc, r, c);
           this.hasMoved = true;
+          if (this.tutorialMode) this.events.emit('tutorial-piece-moved');
           this._checkPromotion();
           this._refreshBoard();
           this._checkGameOver();
           if (this.state === State.GAME_OVER) return;
-          if (this.hasSummoned || this.timeLeft <= 0) { this._endTurn(); return; }
+          if (this.hasSummoned || this.timeLeft <= 0) {
+            if (!this.tutorialMode) { this._endTurn(); return; }
+            this._emitPlayerAction();
+            return;
+          }
           this._showThreatsIfInCheck();
           this._emitPlayerAction();
         });
@@ -258,6 +272,7 @@ export class GameScene extends Phaser.Scene {
       this._highlightCells([{ row: r, col: c }], COLORS.SELECTED);
       this._highlightCells(moves, COLORS.MOVE_HIGHLIGHT);
       this._showThreatsIfInCheck();
+      if (this.tutorialMode) this.events.emit('tutorial-piece-selected');
     }
   }
 
@@ -518,11 +533,13 @@ export class GameScene extends Phaser.Scene {
     if (this.turnTimer) this.turnTimer.remove();
     this.time.delayedCall(800, () => {
       this.scene.stop('UI');
+      if (this.tutorialMode) this.scene.stop('Tutorial');
       this.scene.start('Result', { winner, difficulty: this.difficulty });
     });
   }
 
   startSummonMode(pieceType) {
+    if (this.tutorialLocked) return;
     if (this.hasSummoned) return;
     // 같은 버튼 → 취소
     if (this.state === State.SUMMON_MODE && this.pendingSummonType === pieceType) {
@@ -540,6 +557,7 @@ export class GameScene extends Phaser.Scene {
     this._clearHighlights();
     const squares = this.summonSys.getSummonableSquares(this.board, Owner.PLAYER);
     this._highlightCells(squares, COLORS.SUMMON_HIGHLIGHT);
+    if (this.tutorialMode) this.events.emit('tutorial-summon-clicked');
   }
 
   _checkPromotion() {
@@ -554,7 +572,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   endTurnManually() {
-    if (this.state === State.WAITING && this.board.currentTurn === Owner.PLAYER) this._endTurn();
+    if (this.state === State.WAITING && this.board.currentTurn === Owner.PLAYER) {
+      if (this.tutorialMode) this.events.emit('tutorial-turn-ended');
+      this._endTurn();
+    }
   }
 
   surrender() {

@@ -103,9 +103,36 @@ export class PlacementScene extends Phaser.Scene {
       [cells[i], cells[j]] = [cells[j], cells[i]];
     }
     const placements = cells.slice(0, PAWN_COUNT);
-    this.time.delayedCall(50, () => {
-      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
-    });
+
+    if (this.difficulty === Difficulty.EASY) {
+      this._showTutorialPrompt(placements);
+    } else {
+      this.time.delayedCall(50, () => {
+        this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
+      });
+    }
+  }
+
+  _showTutorialPrompt(placements) {
+    const cx = LAYOUT.GAME_WIDTH / 2, cy = LAYOUT.GAME_HEIGHT / 2;
+    this.add.rectangle(cx, cy, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT, COLORS.PANEL_BG);
+
+    this.add.text(cx, cy - 60, '튜토리얼을 볼까요?', {
+      fontSize: '26px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.add.text(cx, cy - 20, '게임 방법을 단계별로 알려드립니다', {
+      fontSize: '16px', color: '#aaaaaa',
+    }).setOrigin(0.5);
+
+    const yesBtn = this.add.rectangle(cx - 70, cy + 40, 120, 44, 0x2a8a4a).setInteractive();
+    this.add.text(cx - 70, cy + 40, '네', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+    const noBtn = this.add.rectangle(cx + 70, cy + 40, 120, 44, 0x444466).setInteractive();
+    this.add.text(cx + 70, cy + 40, '아니오', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+
+    yesBtn.on('pointerdown', () =>
+      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements, tutorialMode: true }));
+    noBtn.on('pointerdown', () =>
+      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements }));
   }
 
   _startGame() {
