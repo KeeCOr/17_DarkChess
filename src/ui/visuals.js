@@ -3,6 +3,10 @@ import { COLORS, LAYOUT, PieceType, TEXT_COLORS } from '../config.js';
 export const UI_COPY = Object.freeze({
   menu: {
     title: 'Chess Summon',
+    modeTitle: '플레이 모드 선택',
+    single: '싱글 플레이',
+    multiplayer: '멀티 플레이',
+    back: '뒤로',
     subtitle: '난이도를 선택하세요',
     difficulties: {
       EASY: '쉬움',
@@ -92,6 +96,18 @@ export const UI_COPY = Object.freeze({
     lose: '패배...',
     replay: '다시하기',
     menu: '메인 메뉴',
+  },
+  multiplayer: {
+    title: '온라인 멀티 플레이',
+    nicknamePrompt: '랭크에 사용할 닉네임을 입력하세요',
+    connecting: '서버에 연결 중...',
+    offline: '서버 연결 실패: npm run online:server 를 먼저 실행하세요',
+    account: '계정',
+    rank: '랭크 포인트',
+    queue: '빠른 매칭',
+    queued: '상대를 찾는 중...',
+    matched: '매칭 완료',
+    server: 'ws://localhost:8787',
   },
 });
 

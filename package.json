@@ -1,6 +1,6 @@
 {
   "name": "chess-summon",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "electron": "electron .",
+    "online:server": "node server/multiplayer-server.cjs",
     "dist": "vite build && electron-builder --win --x64",
     "build:html": "cross-env BUILD_MODE=singlefile vite build"
   },
@@ -29,11 +30,12 @@
       "icon": "icon.ico"
     },
     "portable": {
-      "artifactName": "ChessSummon_v0.1.13_portable.exe"
+      "artifactName": "ChessSummon_v0.1.14_portable.exe"
     },
     "files": [
       "electron/**/*",
-      "dist/**/*"
+      "dist/**/*",
+      "server/**/*"
     ],
     "directories": {
       "output": "release"

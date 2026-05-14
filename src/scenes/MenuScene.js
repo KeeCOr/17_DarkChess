@@ -6,10 +6,45 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
 
   create() {
+    this.mode = 'mode';
+    this.buttons = [];
+    this._showModeSelect();
+  }
+
+  _clearMenu() {
+    this.children.removeAll(true);
+    this.buttons = [];
+  }
+
+  _showModeSelect() {
+    this._clearMenu();
     const cx = LAYOUT.GAME_WIDTH / 2;
     addStageBackground(this, UI_COPY.menu.title);
 
     this.add.text(cx, 148, '5x5 전술판 위에서 병사를 소환해 왕을 무너뜨리세요', {
+      fontSize: '16px',
+      color: TEXT_COLORS.MUTED,
+    }).setOrigin(0.5);
+
+    this.add.text(cx, 220, UI_COPY.menu.modeTitle, {
+      fontSize: '22px',
+      color: TEXT_COLORS.GOLD,
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const single = addTextButton(this, cx, 315, 240, 56, UI_COPY.menu.single, { fontSize: '21px', active: true });
+    single.rect.on('pointerdown', () => this._showDifficultySelect());
+
+    const multi = addTextButton(this, cx, 395, 240, 56, UI_COPY.menu.multiplayer, { fontSize: '21px' });
+    multi.rect.on('pointerdown', () => this.scene.start('MultiplayerLobby'));
+  }
+
+  _showDifficultySelect() {
+    this._clearMenu();
+    const cx = LAYOUT.GAME_WIDTH / 2;
+    addStageBackground(this, UI_COPY.menu.title);
+
+    this.add.text(cx, 148, UI_COPY.menu.single, {
       fontSize: '16px',
       color: TEXT_COLORS.MUTED,
     }).setOrigin(0.5);
@@ -38,5 +73,8 @@ export class MenuScene extends Phaser.Scene {
         this.scene.start('Placement', { difficulty: value });
       });
     }
+
+    const back = addTextButton(this, cx, 535, 150, 40, UI_COPY.menu.back, { fontSize: '15px' });
+    back.rect.on('pointerdown', () => this._showModeSelect());
   }
 }
