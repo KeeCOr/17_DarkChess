@@ -1,5 +1,5 @@
 export const BOARD_SIZE = 5;
-export const TURN_TIME_LIMIT = 60; // seconds
+export const TURN_TIME_LIMIT = 30; // seconds
 export const MANA_PER_TURN = 2;
 export const MAX_MANA = 10;
 export const AI_THINK_DELAY = 600; // ms

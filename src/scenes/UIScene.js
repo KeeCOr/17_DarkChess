@@ -1,6 +1,7 @@
 // src/scenes/UIScene.js
 import {
   COLORS, LAYOUT, Owner, PieceType, SUMMON_COSTS, SUMMON_REPEAT_COST_INCREASE, TEXT_COLORS,
+  TURN_TIME_LIMIT,
 } from '../config.js';
 import {
   addDivider, addPanel, addSectionLabel, addTextButton, getPieceName,
@@ -21,7 +22,7 @@ export class UIScene extends Phaser.Scene {
     this.turnText = this.add.text(PANEL_X, 34, UI_COPY.game.playerTurn, {
       fontSize: '23px', color: TEXT_COLORS.SUCCESS, fontStyle: 'bold',
     });
-    this.timerText = this.add.text(PANEL_X, 66, '60', {
+    this.timerText = this.add.text(PANEL_X, 66, String(TURN_TIME_LIMIT), {
       fontSize: '30px', color: TEXT_COLORS.TIMER, fontStyle: 'bold',
     });
 

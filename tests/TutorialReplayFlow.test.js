@@ -14,13 +14,37 @@ describe('tutorial and replay flow', () => {
     expect(texts).toContain(UI_COPY.tutorial.steps[4]);
   });
 
-  it('lets tutorial overlay clicks pass through to highlighted game controls', async () => {
+  it('builds click blockers around the highlighted tutorial target', async () => {
+    const { buildTutorialMaskRects } = await import('../src/scenes/TutorialScene.js');
+    const highlight = { x: 100, y: 120, w: 200, h: 160 };
+
+    const rects = buildTutorialMaskRects(800, 600, highlight);
+
+    expect(rects).toEqual([
+      { x: 400, y: 60, w: 800, h: 120 },
+      { x: 400, y: 440, w: 800, h: 320 },
+      { x: 50, y: 200, w: 100, h: 160 },
+      { x: 550, y: 200, w: 500, h: 160 },
+    ]);
+  });
+
+  it('blocks clicks outside the highlighted tutorial target', async () => {
     const { TutorialScene } = await import('../src/scenes/TutorialScene.js');
     const scene = Object.create(TutorialScene.prototype);
-    const overlay = {
-      setDepth() { return this; },
-      setInteractive() { this.interactive = true; return this; },
-      destroy() {},
+    const rectangles = [];
+    const makeRectangle = () => {
+      const rect = {
+        interactive: false,
+        setDepth() { return this; },
+        setAlpha() { return this; },
+        setStrokeStyle() { return this; },
+        setInteractive() { this.interactive = true; return this; },
+        on() { return this; },
+        setData() { return this; },
+        destroy() {},
+      };
+      rectangles.push(rect);
+      return rect;
     };
     const text = { setOrigin() { return this; }, setDepth() { return this; }, destroy() {} };
     const graphics = {
@@ -35,7 +59,7 @@ describe('tutorial and replay flow', () => {
     scene.stepIndex = 0;
     scene._overlayObjs = [];
     scene.add = {
-      rectangle: () => overlay,
+      rectangle: makeRectangle,
       graphics: () => graphics,
       text: () => text,
       circle: () => ({ setDepth() { return this; }, destroy() {} }),
@@ -44,7 +68,51 @@ describe('tutorial and replay flow', () => {
 
     scene._showStep();
 
-    expect(overlay.interactive).not.toBe(true);
+    expect(rectangles).toHaveLength(4);
+    expect(rectangles.every(rect => rect.interactive)).toBe(true);
+  });
+
+  it('blocks the whole tutorial screen when there is only an info step', async () => {
+    const { TutorialScene } = await import('../src/scenes/TutorialScene.js');
+    const scene = Object.create(TutorialScene.prototype);
+    const rectangles = [];
+    const makeRectangle = () => {
+      const rect = {
+        interactive: false,
+        setDepth() { return this; },
+        setAlpha() { return this; },
+        setStrokeStyle() { return this; },
+        setInteractive() { this.interactive = true; return this; },
+        on() { return this; },
+        setData() { return this; },
+        destroy() {},
+      };
+      rectangles.push(rect);
+      return rect;
+    };
+    const text = { setOrigin() { return this; }, setDepth() { return this; }, destroy() {} };
+    const graphics = {
+      setDepth() { return this; },
+      lineStyle() { return this; },
+      strokeRoundedRect() { return this; },
+      fillStyle() { return this; },
+      fillRoundedRect() { return this; },
+      destroy() {},
+    };
+
+    scene.stepIndex = 4;
+    scene._overlayObjs = [];
+    scene.add = {
+      rectangle: makeRectangle,
+      graphics: () => graphics,
+      text: () => text,
+      circle: () => ({ setDepth() { return this; }, destroy() {} }),
+    };
+    scene.tweens = { add: () => {} };
+
+    scene._showStep();
+
+    expect(rectangles[0].interactive).toBe(true);
   });
 
   it('marks replay placement as a direct retry without tutorial prompt', async () => {

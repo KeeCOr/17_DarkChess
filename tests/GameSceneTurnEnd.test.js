@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Owner } from '../src/config.js';
+import { Owner, TURN_TIME_LIMIT } from '../src/config.js';
 
 beforeAll(() => {
   globalThis.Phaser = { Scene: class {} };
@@ -47,5 +47,29 @@ describe('GameScene manual turn ending', () => {
     expect(movableShown).toBe(true);
     expect(threatsShown).toBe(true);
     expect(hintMode).toBe('default');
+  });
+
+  it('does not auto-end from the tutorial timer before the turn-end lesson click', async () => {
+    const { GameScene } = await import('../src/scenes/GameScene.js');
+    const scene = Object.create(GameScene.prototype);
+    let ended = false;
+    let removed = false;
+
+    scene.timeLeft = 1;
+    scene.tutorialMode = true;
+    scene.animating = false;
+    scene.board = { currentTurn: Owner.PLAYER };
+    scene.events = { emit: () => {} };
+    scene.turnTimer = { remove: () => { removed = true; } };
+    scene._endTurn = () => { ended = true; };
+
+    scene._tickTimer();
+
+    expect(removed).toBe(true);
+    expect(ended).toBe(false);
+  });
+
+  it('uses a 30 second turn timer', () => {
+    expect(TURN_TIME_LIMIT).toBe(30);
   });
 });

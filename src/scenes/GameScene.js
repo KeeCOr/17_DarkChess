@@ -526,6 +526,7 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('timer-tick', this.timeLeft);
     if (this.timeLeft <= 0) {
       if (this.turnTimer) { this.turnTimer.remove(); this.turnTimer = null; }
+      if (this.tutorialMode) return;
       if (this.board.currentTurn === Owner.PLAYER && !this.animating) this._endTurn();
     }
   }

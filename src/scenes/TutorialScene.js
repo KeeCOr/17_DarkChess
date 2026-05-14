@@ -24,6 +24,20 @@ export const TUTORIAL_STEPS = [
   { text: UI_COPY.tutorial.steps[6], highlight: null, waitEvent: null },
 ];
 
+export function buildTutorialMaskRects(width, height, highlight) {
+  if (!highlight) return [{ x: width / 2, y: height / 2, w: width, h: height }];
+  const left = Math.max(0, highlight.x);
+  const top = Math.max(0, highlight.y);
+  const right = Math.min(width, highlight.x + highlight.w);
+  const bottom = Math.min(height, highlight.y + highlight.h);
+  return [
+    { x: width / 2, y: top / 2, w: width, h: top },
+    { x: width / 2, y: bottom + (height - bottom) / 2, w: width, h: height - bottom },
+    { x: left / 2, y: top + (bottom - top) / 2, w: left, h: bottom - top },
+    { x: right + (width - right) / 2, y: top + (bottom - top) / 2, w: width - right, h: bottom - top },
+  ].filter(rect => rect.w > 0 && rect.h > 0);
+}
+
 export class TutorialScene extends Phaser.Scene {
   constructor() { super({ key: 'Tutorial', active: false }); }
 
@@ -66,12 +80,18 @@ export class TutorialScene extends Phaser.Scene {
     if (!step) { this._finish(); return; }
 
     const W = LAYOUT.GAME_WIDTH, H = LAYOUT.GAME_HEIGHT;
-    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.58).setDepth(20);
-    this._overlayObjs.push(overlay);
+    const highlightRect = step.highlight ? HIGHLIGHT_RECTS[step.highlight] : null;
+    const blockers = buildTutorialMaskRects(W, H, highlightRect).map(rect =>
+      this.add.rectangle(rect.x, rect.y, rect.w, rect.h, 0x000000, 0.62)
+        .setDepth(20)
+        .setInteractive());
+    this._overlayObjs.push(...blockers);
 
     if (step.highlight) {
-      const r = HIGHLIGHT_RECTS[step.highlight];
+      const r = highlightRect;
       const border = this.add.graphics().setDepth(21);
+      border.fillStyle(0xffffff, 0.08);
+      border.fillRoundedRect(r.x + 4, r.y + 4, r.w - 8, r.h - 8, 8);
       border.lineStyle(4, COLORS.GOLD, 1);
       border.strokeRoundedRect(r.x, r.y, r.w, r.h, 8);
       border.lineStyle(10, COLORS.GOLD, 0.14);

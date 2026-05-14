@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <title>Chess Summon 기획서 v0.1.11</title>
+  <title>Chess Summon 기획서 v0.1.13</title>
   <style>
     body { margin: 0; background: #111426; color: #eef2ff; font-family: Arial, "Malgun Gothic", sans-serif; line-height: 1.6; }
     main { max-width: 880px; margin: 0 auto; padding: 40px 28px 72px; }
@@ -20,10 +20,10 @@
 <body>
 <main>
   <h1>Chess Summon 기획서</h1>
-  <p class="meta"><strong>버전:</strong> 0.1.11<br><strong>최종 수정:</strong> 2026-05-14<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
+  <p class="meta"><strong>버전:</strong> 0.1.13<br><strong>최종 수정:</strong> 2026-05-14<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
 
   <h2>1. 게임 개요</h2>
-  <p>Chess Summon은 5x5 체스판에서 왕을 지키며 마나로 새로운 말을 소환하는 전술 게임이다. 플레이어는 제한된 시야와 60초 턴 안에서 이동 또는 소환을 선택한다.</p>
+  <p>Chess Summon은 5x5 체스판에서 왕을 지키며 마나로 새로운 말을 소환하는 전술 게임이다. 플레이어는 제한된 시야와 30초 턴 안에서 이동 또는 소환을 선택한다.</p>
 
   <h2>2. 기본 규칙</h2>
   <ul>
@@ -51,6 +51,8 @@
   <p>같은 종류를 반복 소환할수록 비용이 2씩 증가한다. 소환은 아군 말 주변 8칸의 빈 칸에만 가능하다.</p>
 
   <h2>4. UI / UX</h2>
+  <p>v0.1.13에서는 일반 턴 제한시간을 60초에서 30초로 줄였다. 튜토리얼 중에는 타이머가 0이 되어도 자동으로 턴이 넘어가지 않으며, 이동과 소환을 모두 마친 뒤에도 턴 종료 단계에서는 반드시 <strong>턴 종료</strong> 버튼을 눌러야 다음 단계로 넘어간다.</p>
+  <p>v0.1.12에서는 튜토리얼에서 눌러야 하는 영역을 밝은 하이라이트로 표시하고, 그 주변은 클릭 차단막으로 덮어 다른 입력이 동작하지 않게 했다. 보드, 소환 카드, 턴 종료 버튼처럼 실제로 눌러야 하는 영역은 비워 두어 아래 실제 컨트롤만 누를 수 있고, 안내만 보여주는 단계는 전체 화면을 차단하고 확인 버튼만 동작한다.</p>
   <p>v0.1.11에서는 같은 종류의 말을 반복 소환할 때 증가하는 마나 비용을 <strong>+1</strong>에서 <strong>+2</strong>로 변경했다. 실제 소환 판정과 오른쪽 소환 카드의 비용 표시가 같은 증가량 상수를 사용한다.</p>
   <p>v0.1.10에서는 말을 선택해 이동 가능 칸이 표시된 상태에서 마우스 오른쪽 버튼을 누르면 이동 선택을 취소하게 했다. 선택 취소 시 이동 하이라이트를 지우고, 이동 가능한 아군 말 표시와 체크 위협 표시를 다시 복구한다.</p>
   <p>v0.1.9에서는 결과 화면의 <strong>다시하기</strong>가 쉬움 난이도에서도 튜토리얼 질문을 다시 띄우지 않고 바로 재도전 게임으로 진입하게 했다. 튜토리얼 오버레이가 전체 화면 클릭을 가로막지 않도록 수정해 하이라이트된 보드와 버튼을 실제로 누를 수 있게 했고, 누락되어 있던 한 턴 이동/소환 규칙 안내 단계를 복구했다.</p>
@@ -73,8 +75,8 @@
   </table>
 
   <h2>6. 배포</h2>
-  <p>설치 없는 단일 HTML 파일: <code>ChessSummon_v0.1.11.html</code></p>
-  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.11_portable.exe</code></p>
+  <p>설치 없는 단일 HTML 파일: <code>ChessSummon_v0.1.13.html</code></p>
+  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.13_portable.exe</code></p>
 </main>
 </body>
 </html>
