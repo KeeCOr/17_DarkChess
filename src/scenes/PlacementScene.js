@@ -10,6 +10,7 @@ export class PlacementScene extends Phaser.Scene {
 
   init(data) {
     this.difficulty = data.difficulty;
+    this.skipTutorialPrompt = data.skipTutorialPrompt || false;
     this.placed = {};
     this.pawnCount = 0;
   }
@@ -112,7 +113,7 @@ export class PlacementScene extends Phaser.Scene {
     }
     const placements = cells.slice(0, PAWN_COUNT);
 
-    if (this.difficulty === Difficulty.EASY) {
+    if (this.difficulty === Difficulty.EASY && !this.skipTutorialPrompt) {
       this._showTutorialPrompt(placements);
     } else {
       this.time.delayedCall(50, () => {

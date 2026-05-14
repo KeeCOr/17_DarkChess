@@ -1,6 +1,6 @@
 // src/scenes/UIScene.js
 import {
-  COLORS, LAYOUT, Owner, PieceType, SUMMON_COSTS, TEXT_COLORS,
+  COLORS, LAYOUT, Owner, PieceType, SUMMON_COSTS, SUMMON_REPEAT_COST_INCREASE, TEXT_COLORS,
 } from '../config.js';
 import {
   addDivider, addPanel, addSectionLabel, addTextButton, getPieceName,
@@ -222,7 +222,7 @@ export class UIScene extends Phaser.Scene {
   _refreshSummonButtons(playerMana, hasSummoned, summonCounts) {
     for (const [type, entry] of Object.entries(this.summonButtons)) {
       const count = summonCounts?.[type] || 0;
-      const cost = (SUMMON_COSTS[type] || 1) + count;
+      const cost = (SUMMON_COSTS[type] || 1) + count * SUMMON_REPEAT_COST_INCREASE;
       const enabled = !hasSummoned && playerMana >= cost;
       setButtonState(entry, { enabled, active: false });
       entry.rect.setData('active', false);

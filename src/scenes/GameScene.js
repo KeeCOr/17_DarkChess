@@ -72,6 +72,7 @@ export class GameScene extends Phaser.Scene {
     this.tutorialLocked = false;
     this._refreshBoard();
     this.scene.launch('UI');
+    this.input.on('pointerdown', this._onPointerDown, this);
     this._startTurn(Owner.PLAYER);
     if (this.tutorialMode) this.scene.launch('Tutorial');
   }
@@ -226,6 +227,22 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _onPointerDown(pointer) {
+    if (!pointer?.rightButtonDown?.()) return;
+    if (this.state !== State.SELECTED) return;
+    if (this.animating || this.tutorialLocked) return;
+    this._cancelSelectedMove();
+  }
+
+  _cancelSelectedMove() {
+    this._clearHighlights();
+    this.state = State.WAITING;
+    this.selectedCell = null;
+    this._showMovablePieces();
+    this._showThreatsIfInCheck();
+    this._updateHint('default');
+  }
+
   _onCellClick(r, c) {
     if (this.state === State.AI_TURN || this.state === State.GAME_OVER) return;
     if (this.animating) return;
@@ -266,12 +283,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.state === State.SELECTED) {
       if (this.selectedCell.row === r && this.selectedCell.col === c) {
-        this._clearHighlights();
-        this.state = State.WAITING;
-        this.selectedCell = null;
-        this._showMovablePieces();
-        this._showThreatsIfInCheck();
-        this._updateHint('default');
+        this._cancelSelectedMove();
         return;
       }
       const moves = this.calc.getMoves(this.board, this.selectedCell.row, this.selectedCell.col);
@@ -301,12 +313,7 @@ export class GameScene extends Phaser.Scene {
         });
         return;
       }
-      this._clearHighlights();
-      this.state = State.WAITING;
-      this.selectedCell = null;
-      this._showMovablePieces();
-      this._showThreatsIfInCheck();
-      this._updateHint('default');
+      this._cancelSelectedMove();
     }
 
     const piece = this.board.getPiece(r, c);
@@ -592,6 +599,7 @@ export class GameScene extends Phaser.Scene {
 
   _gameOver(winner) {
     this.state = State.GAME_OVER;
+    this.input.off('pointerdown', this._onPointerDown, this);
     if (this.turnTimer) this.turnTimer.remove();
     this.time.delayedCall(800, () => {
       this.scene.stop('UI');

@@ -33,6 +33,8 @@ export const SUMMON_COSTS = Object.freeze({
   [PieceType.QUEEN]: 8,
 });
 
+export const SUMMON_REPEAT_COST_INCREASE = 2;
+
 export const PIECE_VALUES = Object.freeze({
   [PieceType.PAWN]: 1,
   [PieceType.KNIGHT]: 3,

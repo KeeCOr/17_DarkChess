@@ -1,12 +1,12 @@
 import { Piece } from './Piece.js';
-import { SUMMON_COSTS } from '../config.js';
+import { SUMMON_COSTS, SUMMON_REPEAT_COST_INCREASE } from '../config.js';
 
 export class SummonSystem {
   getCost(board, owner, pieceType) {
     const base = SUMMON_COSTS[pieceType];
     if (base === undefined) return Infinity;
     const count = board.summonCounts?.[owner]?.[pieceType] || 0;
-    return base + count;
+    return base + count * SUMMON_REPEAT_COST_INCREASE;
   }
 
   getSummonableSquares(board, owner) {

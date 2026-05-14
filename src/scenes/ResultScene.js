@@ -22,14 +22,16 @@ export class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const replay = addTextButton(this, cx, 320, 220, 54, UI_COPY.result.replay);
-    replay.rect.on('pointerdown', () => {
-      this.scene.start('Placement', { difficulty: this.difficulty });
-    });
+    replay.rect.on('pointerdown', () => this._replay());
 
     const menu = addTextButton(this, cx, 390, 220, 54, UI_COPY.result.menu);
     menu.rect.on('pointerdown', () => {
       this.scene.stop('UI');
       this.scene.start('Menu');
     });
+  }
+
+  _replay() {
+    this.scene.start('Placement', { difficulty: this.difficulty, skipTutorialPrompt: true });
   }
 }

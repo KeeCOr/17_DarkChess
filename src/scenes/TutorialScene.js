@@ -14,11 +14,12 @@ const HIGHLIGHT_RECTS = {
   endBtn: { x: PANEL_X - 8, y: 524, w: 198, h: 42 },
 };
 
-const STEPS = [
+export const TUTORIAL_STEPS = [
   { text: UI_COPY.tutorial.steps[0], highlight: 'board', waitEvent: 'tutorial-piece-selected' },
   { text: UI_COPY.tutorial.steps[1], highlight: 'board', waitEvent: 'tutorial-piece-moved' },
   { text: UI_COPY.tutorial.steps[2], highlight: 'summonUI', waitEvent: 'tutorial-summon-clicked' },
   { text: UI_COPY.tutorial.steps[3], highlight: 'board', waitEvent: 'tutorial-summoned' },
+  { text: UI_COPY.tutorial.steps[4], highlight: null, waitEvent: null },
   { text: UI_COPY.tutorial.steps[5], highlight: 'endBtn', waitEvent: 'tutorial-turn-ended' },
   { text: UI_COPY.tutorial.steps[6], highlight: null, waitEvent: null },
 ];
@@ -37,7 +38,7 @@ export class TutorialScene extends Phaser.Scene {
     this.gameScene.events.on('tutorial-summoned', () => this._tryAdvance('tutorial-summoned'), this);
     this.gameScene.events.on('tutorial-turn-ended', () => this._tryAdvance('tutorial-turn-ended'), this);
     this.gameScene.events.on('check', (inCheck) => {
-      if (inCheck && this.stepIndex < STEPS.length - 1)
+      if (inCheck && this.stepIndex < TUTORIAL_STEPS.length - 1)
         this._showHint(UI_COPY.tutorial.checkHint);
     }, this);
 
@@ -45,7 +46,7 @@ export class TutorialScene extends Phaser.Scene {
   }
 
   _tryAdvance(event) {
-    const step = STEPS[this.stepIndex];
+    const step = TUTORIAL_STEPS[this.stepIndex];
     if (step && step.waitEvent === event) this._nextStep();
   }
 
@@ -61,11 +62,11 @@ export class TutorialScene extends Phaser.Scene {
 
   _showStep() {
     this._clearOverlay();
-    const step = STEPS[this.stepIndex];
+    const step = TUTORIAL_STEPS[this.stepIndex];
     if (!step) { this._finish(); return; }
 
     const W = LAYOUT.GAME_WIDTH, H = LAYOUT.GAME_HEIGHT;
-    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.58).setDepth(20).setInteractive();
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.58).setDepth(20);
     this._overlayObjs.push(overlay);
 
     if (step.highlight) {
@@ -95,7 +96,7 @@ export class TutorialScene extends Phaser.Scene {
     this._overlayObjs.push(panel, txt);
 
     const dotsY = boxY + boxH / 2 + 18;
-    const total = STEPS.length - 1;
+    const total = TUTORIAL_STEPS.length - 1;
     const dotSpacing = 15;
     const startX = boxX - (total - 1) * dotSpacing / 2;
     for (let i = 0; i < total; i++) {
@@ -109,7 +110,10 @@ export class TutorialScene extends Phaser.Scene {
     if (!step.waitEvent) {
       const confirm = addTextButton(this, boxX, boxY + boxH / 2 + 45, 112, 36, UI_COPY.tutorial.confirm, { active: true, depth: 23 });
       this._overlayObjs.push(confirm.rect, confirm.text);
-      confirm.rect.on('pointerdown', () => this._finish());
+      confirm.rect.on('pointerdown', () => {
+        if (this.stepIndex < TUTORIAL_STEPS.length - 1) this._nextStep();
+        else this._finish();
+      });
     }
   }
 

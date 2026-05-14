@@ -47,6 +47,16 @@ describe('SummonSystem', () => {
     expect(sys.canSummon(b, Owner.PLAYER, PieceType.KNIGHT)).toBe(true);
   });
 
+  it('increases repeated summon cost by 2 mana each time', () => {
+    const b = makeBoard([[4, 2, PieceType.KING, Owner.PLAYER]]);
+
+    expect(sys.getCost(b, Owner.PLAYER, PieceType.PAWN)).toBe(1);
+    b.summonCounts[Owner.PLAYER][PieceType.PAWN] = 1;
+    expect(sys.getCost(b, Owner.PLAYER, PieceType.PAWN)).toBe(3);
+    b.summonCounts[Owner.PLAYER][PieceType.PAWN] = 2;
+    expect(sys.getCost(b, Owner.PLAYER, PieceType.PAWN)).toBe(5);
+  });
+
   it('summon places piece and deducts mana', () => {
     const b = makeBoard([[4, 2, PieceType.KING, Owner.PLAYER]]);
     b.mana[Owner.PLAYER] = 5;
