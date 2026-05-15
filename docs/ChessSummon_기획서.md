@@ -1,6 +1,6 @@
 # Chess Summon 기획서
 
-**버전:** 0.1.14  
+**버전:** 0.1.15  
 **작성일:** 2026-05-12  
 **최종 수정:** 2026-05-14  
 **장르:** 디지털 전략 / 체스 변형
@@ -58,6 +58,12 @@ Chess Summon은 5x5 체스판에서 말을 지키며 마나로 새로운 말을 
 ---
 
 ## 4. UI / UX 변경 이력
+
+### v0.1.15 다시하기 멈춤 수정
+
+- 결과 화면에서 `다시하기`를 누를 때 이전 게임의 `UI`, `Tutorial`, `Game` 씬을 먼저 정리한 뒤 배치 화면으로 이동하게 했다.
+- 이전 게임의 보조 UI나 입력 리스너가 새 게임 위에 남아 멈춘 것처럼 보이는 문제를 막았다.
+- 결과 화면에 난이도 정보가 없더라도 기본값을 사자로 보정해 재시작 흐름이 끊기지 않게 했다.
 
 ### v0.1.14 온라인 멀티 플레이 로비 및 계정 랭크
 
@@ -181,9 +187,9 @@ npm run online:server
 
 | 형태 | 파일명 |
 | --- | --- |
-| 설치 없는 단일 HTML 파일 | `ChessSummon_v0.1.14.html` |
-| Windows 포터블 실행 파일 | `ChessSummon_v0.1.14_portable.exe` |
-| Electron 빌드 출력 | `release/ChessSummon_v0.1.14_portable.exe` |
+| 설치 없는 단일 HTML 파일 | `ChessSummon_v0.1.15.html` |
+| Windows 포터블 실행 파일 | `ChessSummon_v0.1.15_portable.exe` |
+| Electron 빌드 출력 | `release/ChessSummon_v0.1.15_portable.exe` |
 
 ---
 

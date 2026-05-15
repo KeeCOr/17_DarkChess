@@ -119,12 +119,17 @@ describe('tutorial and replay flow', () => {
     const { ResultScene } = await import('../src/scenes/ResultScene.js');
     const scene = Object.create(ResultScene.prototype);
     const starts = [];
+    const stops = [];
 
     scene.difficulty = Difficulty.EASY;
-    scene.scene = { start: (key, data) => starts.push({ key, data }) };
+    scene.scene = {
+      stop: key => stops.push(key),
+      start: (key, data) => starts.push({ key, data }),
+    };
 
     scene._replay();
 
+    expect(stops).toEqual(['UI', 'Tutorial', 'Game']);
     expect(starts).toEqual([
       { key: 'Placement', data: { difficulty: Difficulty.EASY, skipTutorialPrompt: true } },
     ]);

@@ -1,5 +1,5 @@
 // src/scenes/ResultScene.js
-import { LAYOUT, TEXT_COLORS, Owner } from '../config.js';
+import { Difficulty, LAYOUT, TEXT_COLORS, Owner } from '../config.js';
 import { addStageBackground, addTextButton, UI_COPY } from '../ui/visuals.js';
 
 export class ResultScene extends Phaser.Scene {
@@ -7,7 +7,7 @@ export class ResultScene extends Phaser.Scene {
 
   init(data) {
     this.winner = data.winner;
-    this.difficulty = data.difficulty;
+    this.difficulty = data.difficulty || Difficulty.EASY;
   }
 
   create() {
@@ -32,6 +32,9 @@ export class ResultScene extends Phaser.Scene {
   }
 
   _replay() {
+    this.scene.stop('UI');
+    this.scene.stop('Tutorial');
+    this.scene.stop('Game');
     this.scene.start('Placement', { difficulty: this.difficulty, skipTutorialPrompt: true });
   }
 }
