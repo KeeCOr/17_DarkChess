@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <title>Chess Summon 기획서 v0.1.15</title>
+  <title>Chess Summon 기획서 v0.1.16</title>
   <style>
     body { margin: 0; background: #111426; color: #eef2ff; font-family: Arial, "Malgun Gothic", sans-serif; line-height: 1.6; }
     main { max-width: 920px; margin: 0 auto; padding: 40px 28px 72px; }
@@ -20,8 +20,18 @@
 </head>
 <body>
 <main>
+  <h2>2026-05-18 업데이트: 소환 카드 사용 조건/등급 표기</h2>
+  <ul>
+    <li>소환 카드마다 <strong>즉시</strong> 또는 <strong>제물</strong> 배지를 표시한다.</li>
+    <li>카드 등급은 별 개수로 표시한다.</li>
+    <li>병사: 즉시 / ★</li>
+    <li>기사, 주교: 즉시 / ★★</li>
+    <li>탑: 제물 / ★★★</li>
+    <li>여왕: 제물 / ★★★★★</li>
+    <li>소환 카드 행 높이를 키워 말 이름, 등급, 사용 조건, 마나 비용을 한눈에 읽을 수 있게 했다.</li>
+  </ul>
   <h1>Chess Summon 기획서</h1>
-  <p class="meta"><strong>버전:</strong> 0.1.15<br><strong>최종 수정:</strong> 2026-05-15<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
+  <p class="meta"><strong>버전:</strong> 0.1.16<br><strong>최종 수정:</strong> 2026-05-18<br><strong>장르:</strong> 디지털 전략 / 체스 변형</p>
 
   <h2>1. 게임 개요</h2>
   <p>Chess Summon은 5x5 체스판에서 말을 지키며 마나로 새로운 말을 소환하는 전술 게임이다. 플레이어는 제한된 시야와 30초 턴 안에서 이동 1번, 소환 1번을 선택하고, 소환 위치를 확보해 전세를 뒤집어야 한다.</p>
@@ -53,6 +63,13 @@
   <p>같은 종류를 반복 소환할수록 비용은 2씩 증가한다. 소환은 아군 말 주변 8칸의 빈 칸에만 가능하며, 소환된 말은 해당 턴에 이동할 수 없다.</p>
 
   <h2>4. UI / UX 변경 이력</h2>
+  <h3>v0.1.16 어려움 배치 후 전투 시작 수정</h3>
+  <ul>
+    <li>어려움 난이도에서 폰 위치를 바꾼 뒤 <strong>전투 시작</strong>을 누르면 현재 배치값으로 즉시 게임을 시작하게 했다.</li>
+    <li>전투 시작을 타이머 예약에 의존하지 않게 해 다시하기 이후 배치 화면에서 시작이 끊기거나 늦게 반응하는 문제를 막았다.</li>
+    <li>폰이 4개 배치되지 않은 상태에서는 내부 시작 함수가 호출되어도 게임을 시작하지 않도록 방어했다.</li>
+  </ul>
+
   <h3>v0.1.15 다시하기 멈춤 수정</h3>
   <ul>
     <li>결과 화면에서 <strong>다시하기</strong>를 누를 때 이전 게임의 <code>UI</code>, <code>Tutorial</code>, <code>Game</code> 씬을 먼저 정리한 뒤 배치 화면으로 이동하게 했다.</li>
@@ -92,9 +109,9 @@
   </table>
 
   <h2>7. 배포</h2>
-  <p>설치 없는 단일 HTML 파일: <code>ChessSummon_v0.1.15.html</code></p>
-  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.15_portable.exe</code></p>
-  <p>Electron 빌드 출력: <code>release/ChessSummon_v0.1.15_portable.exe</code></p>
+  <p>설치 없는 단일 HTML 파일: <code>ChessSummon_v0.1.16.html</code></p>
+  <p>Windows 포터블 실행 파일: <code>ChessSummon_v0.1.16_portable.exe</code></p>
+  <p>Electron 빌드 출력: <code>release/ChessSummon_v0.1.16_portable.exe</code></p>
 </main>
 </body>
 </html>

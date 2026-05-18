@@ -134,4 +134,58 @@ describe('tutorial and replay flow', () => {
       { key: 'Placement', data: { difficulty: Difficulty.EASY, skipTutorialPrompt: true } },
     ]);
   });
+
+  it('starts hard mode battle immediately with the edited pawn positions', async () => {
+    const { PlacementScene } = await import('../src/scenes/PlacementScene.js');
+    const scene = Object.create(PlacementScene.prototype);
+    const starts = [];
+
+    scene.difficulty = Difficulty.HARD;
+    scene.pawnCount = 4;
+    scene.placed = {
+      '3,0': true,
+      '3,1': true,
+      '4,0': true,
+      '4,4': true,
+    };
+    scene.scene = { start: (key, data) => starts.push({ key, data }) };
+    scene.time = { delayedCall: () => { throw new Error('hard mode start should not depend on a delayed timer'); } };
+
+    scene._startGame();
+
+    expect(starts).toEqual([
+      {
+        key: 'Game',
+        data: {
+          difficulty: Difficulty.HARD,
+          playerPlacements: [
+            { row: 3, col: 0 },
+            { row: 3, col: 1 },
+            { row: 4, col: 0 },
+            { row: 4, col: 4 },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it('does not start hard mode battle before four pawns are placed', async () => {
+    const { PlacementScene } = await import('../src/scenes/PlacementScene.js');
+    const scene = Object.create(PlacementScene.prototype);
+    const starts = [];
+
+    scene.difficulty = Difficulty.HARD;
+    scene.pawnCount = 3;
+    scene.placed = {
+      '3,0': true,
+      '3,1': true,
+      '4,0': true,
+    };
+    scene.scene = { start: (key, data) => starts.push({ key, data }) };
+    scene.time = { delayedCall: () => { throw new Error('incomplete hard mode placement should not schedule start'); } };
+
+    scene._startGame();
+
+    expect(starts).toEqual([]);
+  });
 });

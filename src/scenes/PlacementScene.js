@@ -13,6 +13,7 @@ export class PlacementScene extends Phaser.Scene {
     this.skipTutorialPrompt = data.skipTutorialPrompt || false;
     this.placed = {};
     this.pawnCount = 0;
+    this.startingBattle = false;
   }
 
   create() {
@@ -143,13 +144,13 @@ export class PlacementScene extends Phaser.Scene {
   }
 
   _startGame() {
+    if (this.startingBattle || this.pawnCount < PAWN_COUNT) return;
+    this.startingBattle = true;
     const placements = Object.keys(this.placed).map(key => {
       const [r, c] = key.split(',').map(Number);
       return { row: r, col: c };
-    });
-    this.time.delayedCall(50, () => {
-      this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
-    });
+    }).sort((a, b) => (a.row - b.row) || (a.col - b.col));
+    this.scene.start('Game', { difficulty: this.difficulty, playerPlacements: placements });
   }
 
   _randomizePawns() {

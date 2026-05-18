@@ -1,4 +1,4 @@
-import { COLORS, LAYOUT, PieceType, TEXT_COLORS } from '../config.js';
+import { COLORS, LAYOUT, PieceType, SummonRequirement, TEXT_COLORS } from '../config.js';
 
 export const UI_COPY = Object.freeze({
   menu: {
@@ -120,6 +120,15 @@ export function getPieceName(type) {
     [PieceType.QUEEN]: '여왕',
     [PieceType.KING]: '왕',
   }[type] || type;
+}
+
+export function getSummonRequirementLabel(requirement) {
+  return requirement === SummonRequirement.TRIBUTE ? '제물' : '즉시';
+}
+
+export function getSummonGradeStars(grade = 1) {
+  const count = Math.max(1, Math.min(5, Number(grade) || 1));
+  return '★'.repeat(count);
 }
 
 export function getTurnHint({ hasMoved = false, hasSummoned = false, mode = 'default' } = {}) {

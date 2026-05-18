@@ -35,6 +35,19 @@ export const SUMMON_COSTS = Object.freeze({
 
 export const SUMMON_REPEAT_COST_INCREASE = 2;
 
+export const SummonRequirement = Object.freeze({
+  FREE: 'FREE',
+  TRIBUTE: 'TRIBUTE',
+});
+
+export const SUMMON_CARD_META = Object.freeze({
+  [PieceType.PAWN]: { requirement: SummonRequirement.FREE, grade: 1 },
+  [PieceType.KNIGHT]: { requirement: SummonRequirement.FREE, grade: 2 },
+  [PieceType.BISHOP]: { requirement: SummonRequirement.FREE, grade: 2 },
+  [PieceType.ROOK]: { requirement: SummonRequirement.TRIBUTE, grade: 3 },
+  [PieceType.QUEEN]: { requirement: SummonRequirement.TRIBUTE, grade: 5 },
+});
+
 export const PIECE_VALUES = Object.freeze({
   [PieceType.PAWN]: 1,
   [PieceType.KNIGHT]: 3,
@@ -71,8 +84,8 @@ export const LAYOUT = Object.freeze({
   HUD_SUMMON_LABEL_Y: 244,
   HUD_MANA_Y: 266,
   HUD_SUMMON_START_Y: 304,
-  HUD_SUMMON_ROW_GAP: 38,
-  HUD_SUMMON_ROW_HEIGHT: 32,
+  HUD_SUMMON_ROW_GAP: 41,
+  HUD_SUMMON_ROW_HEIGHT: 40,
   HUD_FOOTER_Y: 532,
 });
 

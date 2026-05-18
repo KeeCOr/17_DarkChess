@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { LAYOUT, PieceType } from '../src/config.js';
-import { getPieceName, UI_COPY, getButtonColors, getTurnHint } from '../src/ui/visuals.js';
+import { LAYOUT, PieceType, SUMMON_CARD_META, SummonRequirement } from '../src/config.js';
+import {
+  getPieceName, UI_COPY, getButtonColors, getTurnHint,
+  getSummonGradeStars, getSummonRequirementLabel,
+} from '../src/ui/visuals.js';
 
 describe('visual theme helpers', () => {
   it('provides readable Korean labels for all summonable pieces', () => {
@@ -27,6 +30,15 @@ describe('visual theme helpers', () => {
   it('uses mana icon semantics instead of a separate cost label', () => {
     expect(UI_COPY.game.manaIconLabel).toBe('마나');
     expect(UI_COPY.game.cost).toBe('');
+  });
+
+  it('labels summon cards by requirement and star grade', () => {
+    expect(SUMMON_CARD_META[PieceType.PAWN]).toEqual({ requirement: SummonRequirement.FREE, grade: 1 });
+    expect(SUMMON_CARD_META[PieceType.ROOK]).toEqual({ requirement: SummonRequirement.TRIBUTE, grade: 3 });
+    expect(SUMMON_CARD_META[PieceType.QUEEN]).toEqual({ requirement: SummonRequirement.TRIBUTE, grade: 5 });
+    expect(getSummonRequirementLabel(SummonRequirement.FREE)).toBe('즉시');
+    expect(getSummonRequirementLabel(SummonRequirement.TRIBUTE)).toBe('제물');
+    expect(getSummonGradeStars(3)).toBe('★★★');
   });
 
   it('returns clear board hints for turn states', () => {
