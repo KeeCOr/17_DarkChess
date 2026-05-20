@@ -1,6 +1,6 @@
 {
   "name": "chess-summon",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -30,7 +30,7 @@
       "icon": "icon.ico"
     },
     "portable": {
-      "artifactName": "ChessSummon_v0.1.16_portable.exe"
+      "artifactName": "ChessSummon_v0.1.17_portable.exe"
     },
     "files": [
       "electron/**/*",

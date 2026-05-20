@@ -1,6 +1,6 @@
 # Chess Summon 기획서
 
-**버전:** 0.1.16  
+**버전:** 0.1.17  
 **작성일:** 2026-05-12  
 **최종 수정:** 2026-05-18  
 **장르:** 디지털 전략 / 체스 변형
@@ -58,6 +58,12 @@ Chess Summon은 5x5 체스판에서 말을 지키며 마나로 새로운 말을 
 ---
 
 ## 4. UI / UX 변경 이력
+
+### v0.1.17 난이도 선택 클릭 영역 개선
+
+- 싱글 플레이 선택 후 난이도 버튼의 실제 클릭 영역을 버튼과 설명 문구를 포함한 카드 전체로 확장했다.
+- 난이도 설명 문구 주변을 눌러도 해당 난이도로 배치 화면에 진입하도록 해 버튼이 안 눌리는 것처럼 느껴지는 문제를 줄였다.
+- 난이도 카드 클릭 영역을 검증하는 회귀 테스트를 추가했다.
 
 ### v0.1.16 어려움 배치 후 전투 시작 수정
 
@@ -193,9 +199,9 @@ npm run online:server
 
 | 형태 | 파일명 |
 | --- | --- |
-| 설치 없는 단일 HTML 파일 | `ChessSummon_v0.1.16.html` |
-| Windows 포터블 실행 파일 | `ChessSummon_v0.1.16_portable.exe` |
-| Electron 빌드 출력 | `release/ChessSummon_v0.1.16_portable.exe` |
+| 설치 없는 단일 HTML 파일 | `ChessSummon_v0.1.17.html` |
+| Windows 포터블 실행 파일 | `ChessSummon_v0.1.17_portable.exe` |
+| Electron 빌드 출력 | `release/ChessSummon_v0.1.17_portable.exe` |
 
 ---
 

@@ -69,12 +69,25 @@ export class MenuScene extends Phaser.Scene {
         fontSize: '12px',
         color: TEXT_COLORS.MUTED,
       }).setOrigin(0.5);
-      button.rect.on('pointerdown', () => {
-        this.scene.start('Placement', { difficulty: value });
-      });
+      this._wireDifficultyOption(button, cx, y, value);
     }
 
     const back = addTextButton(this, cx, 535, 150, 40, UI_COPY.menu.back, { fontSize: '15px' });
     back.rect.on('pointerdown', () => this._showModeSelect());
+  }
+
+  _wireDifficultyOption(button, x, y, value) {
+    const startPlacement = () => this.scene.start('Placement', { difficulty: value });
+    button.rect.on('pointerdown', startPlacement);
+
+    const hitArea = this.add.rectangle(x, y + 18, 270, 76, 0x000000)
+      .setAlpha(0.001)
+      .setDepth(5)
+      .setInteractive({ useHandCursor: true })
+      .setData('difficultyHitArea', value);
+
+    hitArea.on('pointerover', () => button.rect.setFillStyle(0x394779));
+    hitArea.on('pointerout', () => button.rect.setFillStyle(0x263155));
+    hitArea.on('pointerdown', startPlacement);
   }
 }
